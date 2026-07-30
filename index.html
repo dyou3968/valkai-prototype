@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Valkai Self-Serve — Prototype Walkthrough</title>
+<style>
+  :root {
+    --canvas: #faf9f4; --card: #ffffff; --card-alt: #f4f3ec; --line: #e9e7de;
+    --ink: #2a2924; --ink-2: #55534b; --muted: #6e6c60; --charcoal: #3b3a34;
+    --charcoal-h: #2b2a25; --brand-red: #d0442c; --blue: #3a72bd; --blue-soft: #eaf1fa;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+    background: var(--canvas); color: var(--ink); font-size: 14px; line-height: 1.55;
+    -webkit-font-smoothing: antialiased; padding: 56px 24px 64px;
+  }
+  .wrap { max-width: 760px; margin: 0 auto; }
+  .brand { display: flex; align-items: center; gap: 9px; margin-bottom: 26px; }
+  .brand .mark { width: 19px; height: 19px; background: var(--brand-red); clip-path: polygon(0 22%, 100% 0, 56% 100%, 40% 56%); }
+  .brand .word { font-weight: 650; font-size: 15px; letter-spacing: -0.01em; }
+  .eyebrow { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); font-weight: 700; margin-bottom: 7px; }
+  h1 { font-size: 26px; font-weight: 650; letter-spacing: -0.02em; margin-bottom: 8px; }
+  .lede { font-size: 14.5px; color: var(--ink-2); margin-bottom: 28px; }
+  .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; }
+  .c { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 18px; text-decoration: none; color: inherit; display: block; transition: border-color .15s; }
+  .c:hover { border-color: #cfcdc2; }
+  .c .num { font-size: 10.5px; font-weight: 700; color: var(--blue); background: var(--blue-soft); border-radius: 999px; padding: 3px 9px; display: inline-block; margin-bottom: 9px; }
+  .c .dom { font-size: 10.5px; color: var(--muted); font-weight: 600; margin-bottom: 3px; }
+  .c h2 { font-size: 14.5px; font-weight: 650; margin-bottom: 5px; }
+  .c p { font-size: 12.5px; color: var(--ink-2); margin-bottom: 11px; }
+  .c .go { font-size: 12px; font-weight: 650; color: var(--ink); }
+  .flow { background: var(--card-alt); border: 1px solid var(--line); border-radius: 11px; padding: 12px 15px; font-size: 12.5px; color: var(--ink-2); text-align: center; margin-bottom: 14px; }
+  .flow b { color: var(--ink); }
+  .memo {
+    display: flex; align-items: center; gap: 14px; background: var(--card);
+    border: 1px solid var(--line); border-radius: 12px; padding: 15px 18px;
+    text-decoration: none; color: inherit; transition: border-color .15s;
+  }
+  .memo:hover { border-color: #cfcdc2; }
+  .memo .ic { width: 30px; height: 30px; border-radius: 8px; background: var(--card-alt); border: 1px solid var(--line); display: grid; place-items: center; color: var(--muted); font-size: 13px; flex: 0 0 auto; }
+  .memo .t { flex: 1; }
+  .memo h3 { font-size: 13.5px; font-weight: 650; }
+  .memo p { font-size: 12px; color: var(--ink-2); margin-top: 1px; }
+  .memo .go { font-size: 12px; font-weight: 650; color: var(--ink); white-space: nowrap; }
+  footer { margin-top: 34px; font-size: 11.5px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 14px; }
+  @media (max-width: 720px) { .cards { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand"><span class="mark"></span><span class="word">Valkai</span></div>
+  <div class="eyebrow">Take-home prototype · David You</div>
+  <h1>Self-serve for mid-size biotech</h1>
+  <p class="lede">Three connected prototypes covering the full self-serve path: an executive buying on the marketing site, an IT admin setting the workspace up, and that admin running it afterwards from a dedicated admin domain.</p>
+
+  <div class="cards">
+    <a class="c" href="website.html">
+      <span class="num">1</span>
+      <div class="dom">valkai.com</div>
+      <h2>Purchase journey</h2>
+      <p>A "Try Valkai" entry point in the site nav, then plan selection, details, security review, and confirmation — no sales cycle.</p>
+      <span class="go">Start here →</span>
+    </a>
+    <a class="c" href="onboarding.html">
+      <span class="num">2</span>
+      <div class="dom">app.valkai.com</div>
+      <h2>Admin onboarding</h2>
+      <p>Six guided steps from an empty workspace to a live, governed one: verify domain, connect a source, set retention, invite the team.</p>
+      <span class="go">Open walkthrough →</span>
+    </a>
+    <a class="c" href="admin-console.html">
+      <span class="num">3</span>
+      <div class="dom">admin.valkai.com</div>
+      <h2>Admin console</h2>
+      <p>A separate admin surface for ongoing operation: members and seats, connectors, data governance, activity log, plan and billing.</p>
+      <span class="go">Open console →</span>
+    </a>
+  </div>
+  <div class="flow"><b>Exec buys</b> → <b>IT admin sets up</b> → <b>IT admin operates</b>. Each prototype hands off to the next.</div>
+
+  <a class="memo" href="https://docs.google.com/document/d/16ViFjazdj24r0xI3PsL2ycmzFEjyoKnbo3Eyjqlr9bM/edit?tab=t.mbjaea9lipl1" target="_blank" rel="noopener">
+    <span class="ic">▤</span>
+    <span class="t">
+      <h3>Read the memo</h3>
+      <p>Business case, segmentation, product strategy, MVP requirements, validation plan, and success metrics.</p>
+    </span>
+    <span class="go">Open ↗</span>
+  </a>
+
+  <footer>Prototypes built for the Valkai take-home · Meridian Bio is a fictional mid-size biotech · July 2026</footer>
+</div>
+</body>
+</html>

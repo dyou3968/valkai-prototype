@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Valkai — Workspace Setup (MVP Prototype)</title>
+<style>
+  :root {
+    --canvas: #faf9f4; --sidebar: #f7f6f1; --card: #ffffff; --card-alt: #f4f3ec;
+    --line: #e9e7de; --line-soft: #efede4;
+    --ink: #2a2924; --ink-2: #55534b; --muted: #6e6c60;   /* contrast-corrected */
+    --charcoal: #3b3a34; --charcoal-h: #2b2a25; --brand-red: #d0442c;
+    --blue: #3a72bd; --blue-soft: #eaf1fa; --green: #3d8659; --green-soft: #ecf4ee;
+    --amber: #9c6f14; --amber-soft: #f9f2e0; --radius: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+    background: var(--canvas); color: var(--ink); font-size: 13px; line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  svg.ic { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 1.35; stroke-linecap: round; stroke-linejoin: round; flex: 0 0 auto; }
+  :focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; border-radius: 4px; }
+
+  .app { display: flex; min-height: 100vh; }
+
+  /* ── Progress rail ───────────────────── */
+  .rail {
+    width: 262px; flex: 0 0 262px; background: var(--sidebar);
+    border-right: 1px solid var(--line); padding: 16px 16px 20px;
+    display: flex; flex-direction: column;
+  }
+  .brand { display: flex; align-items: center; gap: 8px; padding: 2px 4px 18px; }
+  .brand .mark { width: 17px; height: 17px; background: var(--brand-red); clip-path: polygon(0 22%, 100% 0, 56% 100%, 40% 56%); }
+  .brand .word { font-weight: 650; font-size: 14px; letter-spacing: -0.01em; }
+  .rail h2 { font-size: 12.5px; font-weight: 650; margin-bottom: 3px; padding: 0 4px; }
+  .rail .railsub { font-size: 11.5px; color: var(--muted); margin-bottom: 14px; padding: 0 4px; }
+  .steps { list-style: none; }
+  .steps li {
+    display: flex; gap: 10px; align-items: flex-start; padding: 8px 6px;
+    border-radius: 8px; font-size: 12.5px; color: var(--ink-2); cursor: pointer;
+    border: 1px solid transparent;
+  }
+  .steps li:hover { background: rgba(0,0,0,0.03); }
+  .steps li.on { background: #eceae1; border-color: #e0ded3; color: var(--ink); font-weight: 650; }
+  .steps li.done .dot { background: var(--blue-soft); color: var(--blue); border-color: transparent; }
+  .steps li.future { color: var(--muted); }
+  .steps li.future .dot { border-style: dashed; }
+  .steps li .dot {
+    width: 18px; height: 18px; border-radius: 50%; flex: 0 0 auto; margin-top: 1px;
+    border: 1.5px solid var(--line); background: var(--card);
+    display: grid; place-items: center; font-size: 10px; font-weight: 800; color: var(--muted);
+  }
+  .steps li.on .dot { border-color: var(--charcoal); color: var(--ink); }
+  .rail .spacer { flex: 1; }
+
+  /* Annotation layer (hidden unless prototype notes are on) */
+  .anno { display: none; }
+  body.notes .anno { display: block; }
+  .anno.rail-note {
+    font-size: 11.5px; color: var(--ink-2); background: #fdfbf2;
+    border: 1px dashed #d8c99a; border-radius: 10px; padding: 10px 12px; margin-top: 10px;
+  }
+  .anno.rail-note .tag, .anno.step-note .tag {
+    display: inline-block; font-size: 9px; font-weight: 800; letter-spacing: 0.06em;
+    color: #8a6d1e; background: #f6ecd0; border-radius: 4px; padding: 2px 5px; margin-bottom: 5px;
+  }
+  .anno.step-note {
+    font-size: 12px; color: var(--ink-2); background: #fdfbf2;
+    border: 1px dashed #d8c99a; border-radius: 10px; padding: 11px 13px; margin-bottom: 16px;
+  }
+  .anno b { color: var(--ink); }
+  .notestoggle {
+    position: fixed; right: 16px; bottom: 16px; z-index: 20;
+    font: inherit; font-size: 11.5px; font-weight: 600; cursor: pointer;
+    background: var(--card); color: var(--ink-2); border: 1px solid var(--line);
+    border-radius: 999px; padding: 7px 13px; box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+  }
+  .notestoggle:hover { border-color: #cfcdc2; color: var(--ink); }
+  body.notes .notestoggle { background: #f6ecd0; border-color: #d8c99a; color: #7a6118; }
+
+  /* ── Main ────────────────────────────── */
+  .main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 14px 34px; border-bottom: 1px solid var(--line);
+  }
+  .topbar .crumb { font-size: 12px; color: var(--muted); }
+  .topbar .crumb b { color: var(--ink-2); font-weight: 600; }
+  .savelater { font-size: 12px; color: var(--ink-2); background: none; border: none; cursor: pointer; font-family: inherit; }
+  .savelater:hover { color: var(--ink); text-decoration: underline; }
+
+  .stage { flex: 1; padding: 34px; display: flex; justify-content: center; }
+  .panel { width: 100%; max-width: 620px; }
+  .step { display: none; }
+  .step.on { display: block; }
+  .eyebrow { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); font-weight: 700; margin-bottom: 7px; }
+  h1 { font-size: 22px; font-weight: 650; letter-spacing: -0.015em; margin-bottom: 6px; }
+  .lede { font-size: 13.5px; color: var(--ink-2); margin-bottom: 20px; }
+
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px 20px; margin-bottom: 14px; }
+  .card h3 { font-size: 13.5px; font-weight: 650; margin-bottom: 3px; }
+  .card .sub { font-size: 12px; color: var(--muted); margin-bottom: 12px; }
+
+  label.fld { display: block; margin-bottom: 12px; }
+  label.fld > span { display: block; font-size: 12px; font-weight: 600; margin-bottom: 4px; }
+  input[type=text], input[type=email], select {
+    width: 100%; font: inherit; font-size: 13px; padding: 8px 11px;
+    border: 1px solid var(--line); border-radius: 8px; background: var(--card); color: var(--ink);
+  }
+  input::placeholder { color: var(--muted); }
+  .hint { font-size: 11.5px; color: var(--muted); margin-top: 4px; }
+
+  .btn { font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; border-radius: 8px; padding: 8px 16px; border: 1px solid transparent; }
+  .btn-dark { background: var(--charcoal); color: #fff; }
+  .btn-dark:hover { background: var(--charcoal-h); }
+  .btn-ghost { background: var(--card); color: var(--ink); border-color: var(--line); }
+  .btn-ghost:hover { border-color: #cfcdc2; }
+  .btn-sm { font-size: 12px; padding: 5px 11px; }
+  .actions { display: flex; align-items: center; gap: 12px; margin-top: 6px; flex-wrap: wrap; }
+  .actions .quiet { font-size: 12px; color: var(--muted); background: none; border: none; cursor: pointer; font-family: inherit; }
+  .actions .quiet:hover { color: var(--ink-2); text-decoration: underline; }
+
+  /* verify */
+  .recordbox { display: flex; align-items: center; gap: 10px; padding: 11px 13px; border: 1px solid var(--line); border-radius: 10px; background: var(--card-alt); }
+  .recordbox code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; color: var(--ink); flex: 1; word-break: break-all; }
+  .copied { font-size: 11.5px; color: var(--green); font-weight: 600; }
+  .kv { display: flex; gap: 10px; font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+  .kv b { color: var(--ink-2); font-weight: 600; min-width: 62px; display: inline-block; }
+  .badge { font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 999px; display: inline-flex; align-items: center; gap: 5px; }
+  .b-ok { background: var(--green-soft); color: var(--green); }
+  .b-wait { background: var(--amber-soft); color: var(--amber); }
+  .b-off { background: var(--card-alt); color: var(--muted); border: 1px solid var(--line); }
+
+  /* connectors */
+  .conn { display: flex; align-items: center; gap: 12px; padding: 12px 3px; border-bottom: 1px solid var(--line-soft); }
+  .conn:last-of-type { border-bottom: none; }
+  .conn-ic { width: 32px; height: 32px; border-radius: 8px; background: var(--card-alt); border: 1px solid var(--line); display: grid; place-items: center; color: var(--ink-2); flex: 0 0 auto; }
+  .conn-t { flex: 1; min-width: 0; }
+  .conn-t .n { font-weight: 600; font-size: 13px; }
+  .conn-t .s { font-size: 11.5px; color: var(--muted); }
+  .sources { display: flex; flex-wrap: wrap; gap: 7px; }
+  .chip { font-size: 11.5px; font-weight: 600; color: #2b5896; background: var(--blue-soft); border-radius: 999px; padding: 4px 10px; }
+  .quietline { font-size: 11.5px; color: var(--muted); margin-top: 12px; padding-top: 11px; border-top: 1px solid var(--line-soft); }
+
+  /* policy */
+  .radio { display: flex; align-items: flex-start; gap: 9px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 9px; margin-bottom: 8px; cursor: pointer; font-size: 12.5px; color: var(--ink-2); }
+  .radio:hover { border-color: #cfcdc2; }
+  .radio:last-of-type { margin-bottom: 0; }
+  .radio input { margin-top: 2px; accent-color: var(--charcoal); }
+  .radio b { color: var(--ink); font-weight: 600; }
+  .reassure { display: flex; flex-wrap: wrap; gap: 8px 18px; }
+  .reassure div { font-size: 12.5px; color: var(--ink-2); display: flex; gap: 7px; align-items: baseline; }
+  .reassure .ck { color: var(--blue); font-weight: 800; font-size: 11px; }
+  .reassure b { color: var(--ink); font-weight: 600; }
+  .doclinks { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 11px; padding-top: 11px; border-top: 1px solid var(--line-soft); }
+  .doclink { font-size: 11.5px; font-weight: 600; color: var(--ink-2); border: 1px solid var(--line); border-radius: 999px; padding: 4px 11px; background: var(--card); cursor: pointer; font-family: inherit; }
+  .doclink:hover { border-color: #cfcdc2; color: var(--ink); }
+
+  /* invites */
+  .inv-row { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; }
+  .inv-row input { flex: 1; }
+  .inv-row select { width: 122px; }
+  .inv-row .rm { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 15px; padding: 2px 6px; line-height: 1; border-radius: 6px; }
+  .inv-row .rm:hover { color: var(--brand-red); background: #fcf2ef; }
+  .seatline { font-size: 11.5px; color: var(--muted); margin-top: 8px; }
+  .seatline b { color: var(--ink-2); }
+
+  /* done */
+  .done-hero { text-align: center; padding: 8px 0 20px; }
+  .done-hero .tick { width: 46px; height: 46px; border-radius: 50%; background: var(--green-soft); color: var(--green); display: grid; place-items: center; font-size: 22px; font-weight: 800; margin: 0 auto 14px; }
+  .summary { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+  .sm { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
+  .sm .k { font-size: 11px; color: var(--muted); }
+  .sm .v { font-size: 13px; font-weight: 650; margin-top: 2px; }
+  .cta-row { display: flex; gap: 10px; justify-content: center; margin-top: 4px; flex-wrap: wrap; }
+  a.btn { text-decoration: none; display: inline-block; }
+
+  .callout { background: var(--card-alt); border: 1px solid var(--line); border-radius: 10px; padding: 11px 13px; font-size: 12px; color: var(--ink-2); margin-top: 12px; }
+  .callout b { color: var(--ink); }
+  .footnote { text-align: center; font-size: 11px; color: var(--muted); padding: 6px 34px 24px; }
+  .footnote a { color: var(--ink-2); }
+
+  /* Responsive — rail stacks above content on narrow viewports */
+  @media (max-width: 880px) {
+    .app { flex-direction: column; }
+    .rail { width: auto; flex: none; border-right: none; border-bottom: 1px solid var(--line); }
+    .steps { display: flex; flex-wrap: wrap; gap: 4px; }
+    .steps li { flex: 1 1 auto; }
+    .stage { padding: 22px 18px; }
+    .topbar { padding: 12px 18px; }
+    .summary { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- Progress rail -->
+  <aside class="rail">
+    <div class="brand"><span class="mark"></span><span class="word">Valkai</span></div>
+    <h2>Set up your workspace</h2>
+    <div class="railsub">Six steps · about 10 minutes</div>
+    <ul class="steps" id="steps">
+      <li data-i="0" class="on"><span class="dot">1</span><span class="txt">Create your account</span></li>
+      <li data-i="1"><span class="dot">2</span><span class="txt">Verify your domain</span></li>
+      <li data-i="2"><span class="dot">3</span><span class="txt">Connect a source</span></li>
+      <li data-i="3"><span class="dot">4</span><span class="txt">Set your data policy</span></li>
+      <li data-i="4"><span class="dot">5</span><span class="txt">Invite your team</span></li>
+      <li data-i="5"><span class="dot">6</span><span class="txt">You are live</span></li>
+    </ul>
+    <div class="spacer"></div>
+    <div class="anno rail-note">
+      <span class="tag">PROTOTYPE NOTE</span>
+      Every step here replaces a stage of the enterprise motion that today requires a Valkai employee — qualification, security review, IT deployment, and provisioning.
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="main">
+    <div class="topbar">
+      <div class="crumb"><b>Meridian Bio</b> · workspace setup</div>
+      <button class="savelater" type="button">Save and finish later</button>
+    </div>
+
+    <div class="stage">
+      <div class="panel">
+
+        <!-- STEP 1 -->
+        <section class="step on" id="s0" aria-label="Step 1: create your account">
+          <div class="eyebrow">Step 1 of 6</div>
+          <h1>Create your account</h1>
+          <p class="lede">Your workspace is created from your work email domain.</p>
+          <div class="anno step-note"><span class="tag">PROTOTYPE NOTE</span> Replaces <b>qualification and manual workspace setup</b>. Fields are pre-filled for demonstration.</div>
+          <div class="card">
+            <label class="fld"><span>Work email</span><input type="email" value="maria.chen@meridianbio.com"><div class="hint">Your workspace will be created for <b>meridianbio.com</b>.</div></label>
+            <label class="fld"><span>Full name</span><input type="text" value="Maria Chen"></label>
+            <label class="fld"><span>Company</span><input type="text" value="Meridian Bio"></label>
+            <label class="fld"><span>Your role</span>
+              <select><option>IT / Systems Administrator</option><option>Regulatory Affairs</option><option>Quality</option><option>Clinical Operations</option><option>Executive</option></select>
+            </label>
+          </div>
+          <div class="actions">
+            <button class="btn btn-dark" onclick="go(1)">Create workspace</button>
+          </div>
+        </section>
+
+        <!-- STEP 2 -->
+        <section class="step" id="s1" aria-label="Step 2: verify your domain">
+          <div class="eyebrow">Step 2 of 6</div>
+          <h1>Verify your domain</h1>
+          <p class="lede">Verifying <b>meridianbio.com</b> lets colleagues join without individual approval.</p>
+          <div class="anno step-note"><span class="tag">PROTOTYPE NOTE</span> The hardest thinking moment in the flow, so it carries a copy control, one line of instruction, and a hand-off path for admins who do not control DNS.</div>
+          <div class="card">
+            <h3>Add this TXT record with your DNS provider</h3>
+            <div class="sub">Then select Check verification. This usually takes a few minutes to propagate.</div>
+            <div class="kv"><b>Type</b> TXT</div>
+            <div class="kv"><b>Host</b> @ (meridianbio.com)</div>
+            <div class="recordbox">
+              <code id="rec">valkai-verify=9f2c41ab</code>
+              <button class="btn btn-ghost btn-sm" type="button" onclick="copyRec()">Copy</button>
+              <span class="copied" id="copied" style="display:none">Copied</span>
+            </div>
+            <div class="actions" style="margin-top:14px">
+              <button class="btn btn-dark" onclick="verifyDomain()">Check verification</button>
+              <span class="badge b-wait" id="domBadge">Not yet verified</span>
+            </div>
+            <div class="quietline">Not the right person for this? <button class="doclink" type="button">Email these instructions to a colleague</button></div>
+          </div>
+          <div class="actions">
+            <button class="btn btn-ghost" onclick="go(2)">Continue and verify later</button>
+          </div>
+        </section>
+
+        <!-- STEP 3 -->
+        <section class="step" id="s2" aria-label="Step 3: connect a source">
+          <div class="eyebrow">Step 3 of 6</div>
+          <h1>Connect a source</h1>
+          <p class="lede">Connect where your documents live so your team has something to work with on day one.</p>
+          <div class="anno step-note"><span class="tag">PROTOTYPE NOTE</span> Replaces the <b>IT deployment engagement</b>. Connect is the primary action; continuing without a source is available but deliberately subordinate.</div>
+          <div class="card">
+            <div class="conn">
+              <span class="conn-ic"><svg class="ic" viewBox="0 0 16 16"><path d="M1.5 4.5a1 1 0 0 1 1-1h3l1.5 1.5h6.5a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1h-11a1 1 0 0 1-1-1z"/></svg></span>
+              <div class="conn-t"><div class="n">Google Drive</div><div class="s" id="gd-s">Choose which folders to index</div></div>
+              <button class="btn btn-dark btn-sm" id="gd-b" onclick="connect('gd','Google Drive')">Connect</button>
+            </div>
+            <div class="conn">
+              <span class="conn-ic"><svg class="ic" viewBox="0 0 16 16"><rect x="2" y="3" width="12" height="10" rx="1.5"/><line x1="2" y1="7" x2="14" y2="7"/><line x1="6" y1="7" x2="6" y2="13"/></svg></span>
+              <div class="conn-t"><div class="n">SharePoint / OneDrive</div><div class="s" id="sp-s">Microsoft 365 document libraries</div></div>
+              <button class="btn btn-dark btn-sm" id="sp-b" onclick="connect('sp','SharePoint')">Connect</button>
+            </div>
+            <div class="conn">
+              <span class="conn-ic"><svg class="ic" viewBox="0 0 16 16"><path d="M6 2v4L2.5 12a2 2 0 0 0 1.7 3h7.6a2 2 0 0 0 1.7-3L10 6V2"/><line x1="5" y1="2" x2="11" y2="2"/></svg></span>
+              <div class="conn-t"><div class="n">Benchling</div><div class="s" id="bl-s">Notebooks and registry</div></div>
+              <button class="btn btn-dark btn-sm" id="bl-b" onclick="connect('bl','Benchling')">Connect</button>
+            </div>
+            <div class="conn">
+              <span class="conn-ic"><svg class="ic" viewBox="0 0 16 16"><path d="M10.5 4.5l-5 5a1.8 1.8 0 0 0 2.5 2.5l5.5-5.5a3 3 0 0 0-4.2-4.2L3.5 8"/></svg></span>
+              <div class="conn-t"><div class="n">Direct uploads</div><div class="s">Drag and drop from any screen</div></div>
+              <span class="badge b-ok">Built in</span>
+            </div>
+            <div class="quietline">Veeva Vault, Medidata, and Documentum require a managed deployment — available on the Growth plan.</div>
+          </div>
+
+          <div class="card">
+            <h3>Included on every workspace</h3>
+            <div class="sub">Regulatory sources, always current. Nothing to configure.</div>
+            <div class="sources">
+              <span class="chip">FDA</span><span class="chip">EMA</span><span class="chip">ClinicalTrials.gov</span><span class="chip">PubMed</span>
+            </div>
+          </div>
+
+          <div class="actions">
+            <button class="btn btn-ghost" id="s2next" onclick="go(3)">Continue without connecting</button>
+          </div>
+        </section>
+
+        <!-- STEP 4 -->
+        <section class="step" id="s3" aria-label="Step 4: set your data policy">
+          <div class="eyebrow">Step 4 of 6</div>
+          <h1>Set your data policy</h1>
+          <p class="lede">Choose how long Valkai keeps your documents. You can change this any time.</p>
+          <div class="anno step-note"><span class="tag">PROTOTYPE NOTE</span> Replaces the <b>security review</b>. The decision leads; guarantees and documents are reassurance, so they sit below it.</div>
+          <div class="card">
+            <h3>Retention</h3>
+            <div class="sub">Applies to uploaded documents and connector-synced copies.</div>
+            <label class="radio"><input type="radio" name="ret"><span><b>Keep until deleted</b> — documents stay until someone removes them</span></label>
+            <label class="radio"><input type="radio" name="ret" checked><span><b>Auto-delete after 90 days</b> — recommended for milestone-driven work</span></label>
+            <label class="radio"><input type="radio" name="ret"><span><b>Auto-delete after 30 days</b> — strictest posture</span></label>
+          </div>
+          <div class="card">
+            <h3>How we handle your data</h3>
+            <div class="sub">Standing guarantees on every plan. Data is stored in the US region.</div>
+            <div class="reassure">
+              <div><span class="ck">✓</span><span><b>Never used for training</b></span></div>
+              <div><span class="ck">✓</span><span><b>Encrypted and isolated</b></span></div>
+              <div><span class="ck">✓</span><span><b>Delete means delete</b></span></div>
+            </div>
+            <div class="doclinks">
+              <button class="doclink" type="button">SOC 2 Type II</button>
+              <button class="doclink" type="button">Data Processing Agreement</button>
+              <button class="doclink" type="button">Security questionnaire (CAIQ)</button>
+              <button class="doclink" type="button">Subprocessors</button>
+            </div>
+          </div>
+          <div class="actions">
+            <button class="btn btn-dark" onclick="go(4)">Save and continue</button>
+          </div>
+        </section>
+
+        <!-- STEP 5 -->
+        <section class="step" id="s4" aria-label="Step 5: invite your team">
+          <div class="eyebrow">Step 5 of 6</div>
+          <h1>Invite your team</h1>
+          <p class="lede">Admins manage the workspace. Members use the Assistant.</p>
+          <div class="anno step-note"><span class="tag">PROTOTYPE NOTE</span> Replaces <b>user provisioning</b>. Two roles only in the MVP; SSO and directory sync arrive in V2.</div>
+          <div class="card">
+            <div id="invites">
+              <div class="inv-row"><input type="email" value="priya@meridianbio.com" oninput="countSeats()"><select><option>Member</option><option>Admin</option></select><button class="rm" type="button" aria-label="Remove this invitation" onclick="rmRow(this)">×</button></div>
+              <div class="inv-row"><input type="email" value="james@meridianbio.com" oninput="countSeats()"><select><option>Member</option><option>Admin</option></select><button class="rm" type="button" aria-label="Remove this invitation" onclick="rmRow(this)">×</button></div>
+              <div class="inv-row"><input type="email" placeholder="colleague@meridianbio.com" oninput="countSeats()"><select><option>Member</option><option>Admin</option></select><button class="rm" type="button" aria-label="Remove this invitation" onclick="rmRow(this)">×</button></div>
+            </div>
+            <button class="btn btn-ghost btn-sm" type="button" onclick="addRow()">Add another</button>
+            <div class="seatline">Your plan includes <b>25 seats</b>. Inviting <b><span id="seatCount">2</span></b>.</div>
+          </div>
+          <div class="actions">
+            <button class="btn btn-dark" onclick="go(5)">Send invites</button>
+            <button class="quiet" type="button" onclick="go(5)">Invite people later</button>
+          </div>
+        </section>
+
+        <!-- STEP 6 -->
+        <section class="step" id="s5" aria-label="Step 6: setup complete">
+          <div class="eyebrow">Step 6 of 6</div>
+          <div class="done-hero">
+            <div class="tick">✓</div>
+            <h1>Your workspace is live</h1>
+            <p class="lede">Meridian Bio is set up and ready. Your team can start using Valkai now.</p>
+          </div>
+          <div class="anno step-note"><span class="tag">PROTOTYPE NOTE</span> This screen is the measurement point for the two north-star metrics: <b>time-to-onboard</b> and the <b>share of accounts onboarded with zero Valkai staff hours</b>. The equivalent enterprise deployment runs six to twelve months.</div>
+          <div class="summary">
+            <div class="sm"><div class="k">Workspace</div><div class="v">meridianbio.com · verified</div></div>
+            <div class="sm"><div class="k">Sources connected</div><div class="v" id="sumConn">4 industry sources</div></div>
+            <div class="sm"><div class="k">Data policy</div><div class="v">Auto-delete after 90 days · US</div></div>
+            <div class="sm"><div class="k">Seats</div><div class="v"><span id="sumSeats">2</span> invited of 25</div></div>
+          </div>
+          <div class="cta-row">
+            <a class="btn btn-dark" href="admin-console.html">Go to the admin console</a>
+            <button class="btn btn-ghost" onclick="go(0)">Restart walkthrough</button>
+          </div>
+        </section>
+
+      </div>
+    </div>
+    <div class="footnote">Prototype 2 of 3 · Valkai workspace setup · <a href="index.html">All prototypes</a> · <a href="website.html">Purchase journey</a> · <a href="admin-console.html">Admin console</a></div>
+  </div>
+</div>
+
+<button class="notestoggle" type="button" id="ntoggle" onclick="toggleNotes()" aria-pressed="false">Show prototype notes</button>
+
+<script>
+  var cur = 0, connected = [];
+  var steps = document.querySelectorAll('#steps li');
+
+  function render() {
+    document.querySelectorAll('.step').forEach(function (s, i) { s.classList.toggle('on', i === cur); });
+    steps.forEach(function (li, i) {
+      li.classList.toggle('on', i === cur);
+      li.classList.toggle('done', i < cur);
+      li.classList.toggle('future', i > cur);
+      li.setAttribute('aria-current', i === cur ? 'step' : 'false');
+      li.querySelector('.dot').textContent = i < cur ? '✓' : (i + 1);
+    });
+    window.scrollTo(0, 0);
+  }
+  function go(i) { cur = i; render(); }
+  steps.forEach(function (li) { li.addEventListener('click', function () { go(+li.dataset.i); }); });
+
+  function copyRec() {
+    var t = document.getElementById('rec').textContent;
+    if (navigator.clipboard) { navigator.clipboard.writeText(t); }
+    var c = document.getElementById('copied');
+    c.style.display = 'inline';
+    setTimeout(function () { c.style.display = 'none'; }, 1600);
+  }
+
+  function verifyDomain() {
+    var b = document.getElementById('domBadge');
+    b.textContent = '✓ Verified'; b.className = 'badge b-ok';
+    setTimeout(function () { go(2); }, 700);
+  }
+
+  function connect(id, name) {
+    var btn = document.getElementById(id + '-b');
+    var sub = document.getElementById(id + '-s');
+    if (connected.indexOf(name) === -1) connected.push(name);
+    btn.outerHTML = '<span class="badge b-ok">✓ Connected</span>';
+    sub.textContent = name === 'Google Drive' ? 'Connected · 1,240 files indexing · synced just now'
+      : (name === 'Benchling' ? 'Connected · notebooks + registry · synced just now'
+      : 'Connected · document libraries · synced just now');
+    document.getElementById('sumConn').textContent = connected.join(' + ') + ' + 4 industry sources';
+    var next = document.getElementById('s2next');
+    next.textContent = 'Continue';
+    next.className = 'btn btn-dark';
+  }
+
+  function addRow() {
+    var d = document.createElement('div');
+    d.className = 'inv-row';
+    d.innerHTML = '<input type="email" placeholder="colleague@meridianbio.com" oninput="countSeats()">' +
+      '<select><option>Member</option><option>Admin</option></select>' +
+      '<button class="rm" type="button" aria-label="Remove this invitation" onclick="rmRow(this)">×</button>';
+    document.getElementById('invites').appendChild(d);
+    d.querySelector('input').focus();
+    countSeats();
+  }
+  function rmRow(b) { b.parentNode.remove(); countSeats(); }
+  function countSeats() {
+    var n = 0;
+    document.querySelectorAll('#invites input').forEach(function (i) { if (i.value.trim()) n++; });
+    document.getElementById('seatCount').textContent = n;
+    document.getElementById('sumSeats').textContent = n;
+  }
+
+  function toggleNotes() {
+    var on = document.body.classList.toggle('notes');
+    var b = document.getElementById('ntoggle');
+    b.textContent = on ? 'Hide prototype notes' : 'Show prototype notes';
+    b.setAttribute('aria-pressed', on ? 'true' : 'false');
+  }
+
+  render();
+  countSeats();
+</script>
+</body>
+</html>

@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Valkai Admin — admin.valkai.com (Prototype)</title>
+<style>
+  :root {
+    --canvas: #faf9f4; --sidebar: #f7f6f1; --card: #ffffff; --card-alt: #f4f3ec;
+    --line: #e9e7de; --line-soft: #efede4; --ink: #2a2924; --ink-2: #6f6d63;
+    --muted: #9a988c; --charcoal: #3b3a34; --charcoal-h: #2b2a25; --brand-red: #d0442c;
+    --blue: #4180d3; --blue-soft: #eaf1fa; --green: #4a9c68; --green-soft: #ecf4ee;
+    --amber: #c08a1e; --amber-soft: #f9f2e0; --radius: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+    background: #e8e6dd; color: var(--ink); font-size: 13px; line-height: 1.45;
+    -webkit-font-smoothing: antialiased; padding: 18px;
+  }
+  svg.ic { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 1.35; stroke-linecap: round; stroke-linejoin: round; flex: 0 0 auto; }
+
+  /* Browser chrome — makes the separate domain legible */
+  .browser { max-width: 1240px; margin: 0 auto; border-radius: 12px; overflow: hidden; border: 1px solid #d6d4c9; box-shadow: 0 8px 28px rgba(0,0,0,0.09); background: var(--canvas); }
+  .chrome { display: flex; align-items: center; gap: 10px; padding: 9px 13px; background: #ededea; border-bottom: 1px solid #dcdad2; }
+  .dots { display: flex; gap: 6px; }
+  .dots i { width: 10px; height: 10px; border-radius: 50%; display: block; }
+  .urlbar { flex: 1; background: #fff; border: 1px solid #dcdad2; border-radius: 999px; padding: 4px 12px; font-size: 11.5px; color: var(--ink-2); text-align: center; }
+  .urlbar b { color: var(--ink); font-weight: 600; }
+
+  /* Admin product bar */
+  .adminbar { display: flex; align-items: center; gap: 14px; padding: 11px 20px; background: var(--card); border-bottom: 1px solid var(--line); }
+  .brand { display: flex; align-items: center; gap: 8px; }
+  .brand .mark { width: 17px; height: 17px; background: var(--brand-red); clip-path: polygon(0 22%, 100% 0, 56% 100%, 40% 56%); }
+  .brand .word { font-weight: 650; font-size: 14px; letter-spacing: -0.01em; }
+  .brand .tagpill { font-size: 10px; font-weight: 800; letter-spacing: 0.05em; color: var(--ink-2); background: var(--card-alt); border: 1px solid var(--line); border-radius: 5px; padding: 2px 6px; margin-left: 2px; }
+  .wsswitch { display: flex; align-items: center; gap: 7px; font-size: 12.5px; font-weight: 600; color: var(--ink); background: var(--card-alt); border: 1px solid var(--line); border-radius: 8px; padding: 5px 10px; cursor: pointer; }
+  .wsswitch .sub { font-weight: 400; color: var(--muted); font-size: 11.5px; }
+  .adminbar .spacer { flex: 1; }
+  .barlink { font-size: 12.5px; color: var(--ink-2); text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
+  .barlink:hover { color: var(--ink); }
+  .avatar { width: 24px; height: 24px; border-radius: 50%; background: var(--brand-red); color: #fff; font-size: 10.5px; font-weight: 700; display: grid; place-items: center; }
+
+  .shell { display: flex; min-height: 640px; }
+
+  /* Admin side nav — admin sections only */
+  .side { width: 204px; flex: 0 0 204px; background: var(--sidebar); border-right: 1px solid var(--line); padding: 14px 10px; display: flex; flex-direction: column; }
+  .sect { font-size: 10.5px; color: var(--muted); font-weight: 600; padding: 12px 8px 5px; letter-spacing: 0.02em; }
+  .side a, .side button.nav {
+    display: flex; align-items: center; gap: 9px; width: 100%; text-align: left;
+    padding: 6px 8px; border-radius: 7px; color: var(--ink); text-decoration: none;
+    font: inherit; font-size: 12.5px; background: none; border: none; cursor: pointer;
+  }
+  .side a:hover, .side button.nav:hover { background: rgba(0,0,0,0.04); }
+  .side button.nav.on { background: #eceae1; border: 1px solid #e3e1d6; padding: 5px 7px; font-weight: 600; }
+  .side .gl { width: 15px; display: inline-flex; justify-content: center; color: var(--ink-2); }
+  .side .spacer { flex: 1; }
+  .sidefoot { border-top: 1px solid var(--line); padding-top: 10px; }
+  .sidefoot .helper { font-size: 11px; color: var(--muted); padding: 0 8px 8px; }
+
+  /* Main */
+  .main { flex: 1; min-width: 0; display: flex; flex-direction: column; background: var(--canvas); }
+  .pagehead { padding: 22px 30px 0; }
+  .pagehead h1 { font-size: 19px; font-weight: 650; letter-spacing: -0.01em; }
+  .pagehead .desc { font-size: 12.5px; color: var(--muted); margin-top: 3px; }
+  .content { padding: 20px 30px 40px; }
+  .view { display: none; }
+  .view.on { display: block; }
+
+  /* Components */
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px 18px; margin-bottom: 13px; }
+  .card h3 { font-size: 13.5px; font-weight: 650; margin-bottom: 2px; }
+  .card .sub { font-size: 12px; color: var(--muted); margin-bottom: 11px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 13px; }
+  .grid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 11px; margin-bottom: 13px; }
+  .stat { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 13px 15px; }
+  .stat .v { font-size: 18px; font-weight: 650; letter-spacing: -0.01em; }
+  .stat .l { font-size: 11.5px; color: var(--muted); margin-top: 1px; }
+  .stat .d { font-size: 11px; margin-top: 4px; color: var(--ink-2); }
+
+  .btn { font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; border-radius: 8px; padding: 6px 12px; border: 1px solid transparent; text-decoration: none; display: inline-block; }
+  .btn-dark { background: var(--charcoal); color: #fff; }
+  .btn-dark:hover { background: var(--charcoal-h); }
+  .btn-ghost { background: var(--card); color: var(--ink); border-color: var(--line); }
+  .btn-ghost:hover { border-color: #d3d1c6; }
+  .btn-danger { background: var(--card); color: var(--brand-red); border-color: #eecabf; }
+  .btn-danger:hover { background: #fcf2ef; }
+  .btn-sm { font-size: 11.5px; padding: 4px 10px; }
+
+  .check { color: var(--blue); font-weight: 700; font-size: 12px; }
+  .okrow { display: flex; gap: 8px; align-items: baseline; margin-bottom: 8px; font-size: 12.5px; color: var(--ink-2); }
+  .okrow b { color: var(--ink); font-weight: 600; }
+
+  table { width: 100%; border-collapse: collapse; }
+  th { text-align: left; font-size: 11px; color: var(--muted); font-weight: 600; padding: 5px 9px; border-bottom: 1px solid var(--line); }
+  td { padding: 9px; border-bottom: 1px solid var(--line-soft); font-size: 12.5px; vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  td .who { display: flex; align-items: center; gap: 9px; }
+  .av2 { width: 24px; height: 24px; border-radius: 50%; color: #fff; font-size: 10px; font-weight: 700; display: grid; place-items: center; }
+  .pill { font-size: 11px; font-weight: 600; padding: 2.5px 8px; border-radius: 999px; display: inline-block; }
+  .p-admin { background: var(--blue-soft); color: #2c5da0; }
+  .p-member { background: var(--card-alt); color: var(--ink-2); border: 1px solid var(--line); }
+  .p-pending { background: var(--amber-soft); color: var(--amber); }
+  .p-on { background: var(--green-soft); color: var(--green); }
+  .p-v2 { background: var(--card-alt); color: var(--muted); border: 1px solid var(--line); }
+  .p-inc { background: var(--blue-soft); color: #2c5da0; }
+
+  .tgl { width: 32px; height: 19px; border-radius: 999px; background: var(--green); position: relative; display: inline-block; flex: 0 0 auto; cursor: pointer; }
+  .tgl::after { content: ""; position: absolute; right: 2.5px; top: 2.5px; width: 14px; height: 14px; border-radius: 50%; background: #fff; }
+  .tgl.off { background: #d9d7cc; }
+  .tgl.off::after { right: auto; left: 2.5px; }
+
+  .conn-row { display: flex; align-items: center; gap: 12px; padding: 11px 3px; border-bottom: 1px solid var(--line-soft); }
+  .conn-row:last-child { border-bottom: none; }
+  .conn-ic { width: 30px; height: 30px; border-radius: 8px; background: var(--card-alt); border: 1px solid var(--line); display: grid; place-items: center; flex: 0 0 auto; color: var(--ink-2); }
+  .conn-t { flex: 1; min-width: 0; }
+  .conn-t .n { font-weight: 600; font-size: 12.5px; }
+  .conn-t .s { font-size: 11.5px; color: var(--muted); }
+
+  .meter { height: 7px; border-radius: 999px; background: var(--line-soft); overflow: hidden; margin: 8px 0 6px; }
+  .meter > div { height: 100%; background: var(--blue); border-radius: 999px; }
+
+  .radio-row { display: flex; align-items: flex-start; gap: 8px; padding: 6px 0; font-size: 12.5px; color: var(--ink-2); }
+  .radio-row input { margin-top: 3px; accent-color: var(--charcoal); }
+  .radio-row b { color: var(--ink); font-weight: 600; }
+
+  .dl-row { display: flex; align-items: center; justify-content: space-between; padding: 9px 3px; border-bottom: 1px solid var(--line-soft); font-size: 12.5px; gap: 12px; }
+  .dl-row:last-child { border-bottom: none; }
+  .dl-row .d1 { font-weight: 600; }
+  .dl-row .d2 { font-size: 11.5px; color: var(--muted); }
+
+  .note { background: var(--card-alt); border: 1px solid var(--line); border-radius: 9px; padding: 10px 13px; font-size: 12px; color: var(--ink-2); margin-top: 11px; }
+  .note b { color: var(--ink); }
+  .v2card { border-style: dashed; background: var(--card-alt); }
+  .v2list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .v2chip { font-size: 11.5px; color: var(--muted); background: var(--card); border: 1px solid var(--line); border-radius: 999px; padding: 4px 10px; }
+
+  .invite { display: flex; gap: 8px; margin-bottom: 13px; }
+  .invite input, .invite select { font: inherit; font-size: 12.5px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--card); color: var(--ink); }
+  .invite input { flex: 1; }
+  .invite input::placeholder { color: var(--muted); }
+
+  .filter-row { display: flex; gap: 8px; margin-bottom: 11px; align-items: center; }
+  .filter-row select { font: inherit; font-size: 12px; padding: 5px 9px; border: 1px solid var(--line); border-radius: 8px; background: var(--card); color: var(--ink-2); }
+  .filter-row .sp { flex: 1; }
+
+  .setup-row { display: flex; align-items: center; gap: 10px; padding: 7.5px 0; font-size: 12.5px; border-bottom: 1px solid var(--line-soft); }
+  .setup-row:last-child { border-bottom: none; }
+  .st-dot { width: 17px; height: 17px; border-radius: 50%; display: grid; place-items: center; font-size: 10px; font-weight: 800; flex: 0 0 auto; background: var(--blue-soft); color: var(--blue); }
+  .setup-row .lbl { flex: 1; color: var(--ink-2); }
+  .setup-row .lbl b { color: var(--ink); font-weight: 600; }
+  .stage-tag { font-size: 10.5px; color: var(--muted); font-style: italic; }
+
+  .footnote { text-align: center; font-size: 11px; color: var(--muted); padding: 12px 30px 16px; border-top: 1px solid var(--line); background: var(--canvas); }
+  .footnote a { color: var(--ink-2); }
+
+  /* Annotation layer — hidden unless prototype notes are on */
+  .anno { display: none; }
+  body.notes .anno { display: block; }
+  .anno.note-block {
+    font-size: 12px; color: var(--ink-2); background: #fdfbf2;
+    border: 1px dashed #d8c99a; border-radius: 10px; padding: 11px 13px; margin-bottom: 13px;
+  }
+  .anno .tag {
+    display: inline-block; font-size: 9px; font-weight: 800; letter-spacing: 0.06em;
+    color: #8a6d1e; background: #f6ecd0; border-radius: 4px; padding: 2px 5px; margin-right: 6px;
+  }
+  .anno b { color: var(--ink); }
+  .notestoggle {
+    position: fixed; right: 18px; bottom: 18px; z-index: 20;
+    font: inherit; font-size: 11.5px; font-weight: 600; cursor: pointer;
+    background: var(--card); color: var(--ink-2); border: 1px solid var(--line);
+    border-radius: 999px; padding: 7px 13px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  }
+  .notestoggle:hover { border-color: #cfcdc2; color: var(--ink); }
+  body.notes .notestoggle { background: #f6ecd0; border-color: #d8c99a; color: #7a6118; }
+  :focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; border-radius: 4px; }
+  .fldlbl { display: block; font-size: 12px; font-weight: 600; margin-bottom: 4px; }
+</style>
+</head>
+<body>
+<div class="browser">
+  <div class="chrome">
+    <div class="dots"><i style="background:#e06c5a"></i><i style="background:#e3c05c"></i><i style="background:#8fbf7a"></i></div>
+    <div class="urlbar"><b>admin.valkai.com</b> / meridian-bio</div>
+  </div>
+
+  <!-- Admin product bar — distinct from the end-user app -->
+  <div class="adminbar">
+    <div class="brand"><span class="mark"></span><span class="word">Valkai</span><span class="tagpill">ADMIN</span></div>
+    <div class="wsswitch">Meridian Bio <span class="sub">· Team plan</span>
+      <svg class="ic" viewBox="0 0 16 16"><path d="M4 6.5l4 4 4-4"/></svg>
+    </div>
+    <div class="spacer"></div>
+    <a class="barlink" href="#">Documentation</a>
+    <a class="barlink" href="#">Support</a>
+    <a class="barlink" href="#">Open Valkai app <svg class="ic" viewBox="0 0 16 16"><path d="M6 3h7v7M13 3L6.5 9.5M11 13H3V5"/></svg></a>
+    <span class="avatar">M</span>
+  </div>
+
+  <div class="shell">
+    <!-- Admin-only navigation -->
+    <aside class="side">
+      <div class="sect">Workspace</div>
+      <button class="nav on" data-v="overview"><span class="gl"><svg class="ic" viewBox="0 0 16 16"><rect x="2" y="2.5" width="5" height="5" rx="1"/><rect x="9" y="2.5" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="4.5" rx="1"/><rect x="9" y="9" width="5" height="4.5" rx="1"/></svg></span>Overview</button>
+      <button class="nav" data-v="members"><span class="gl"><svg class="ic" viewBox="0 0 16 16"><circle cx="6" cy="5.5" r="2.4"/><path d="M1.8 13.5c0-2.3 1.9-4 4.2-4s4.2 1.7 4.2 4"/><path d="M10.8 3.6a2.4 2.4 0 0 1 0 4.6M11.6 9.8c1.6.4 2.7 1.8 2.7 3.7"/></svg></span>Members &amp; seats</button>
+      <button class="nav" data-v="connectors"><span class="gl"><svg class="ic" viewBox="0 0 16 16"><path d="M10.5 4.5l-5 5a1.8 1.8 0 0 0 2.5 2.5l5.5-5.5a3 3 0 0 0-4.2-4.2L3.5 8"/></svg></span>Connectors</button>
+      <div class="sect">Governance</div>
+      <button class="nav" data-v="data"><span class="gl"><svg class="ic" viewBox="0 0 16 16"><path d="M8 1.8l5 2.1v4c0 3-2.1 5.4-5 6.3-2.9-.9-5-3.3-5-6.3v-4z"/><path d="M5.8 8l1.6 1.6 3-3.2"/></svg></span>Data &amp; retention</button>
+      <button class="nav" data-v="activity"><span class="gl"><svg class="ic" viewBox="0 0 16 16"><path d="M3 2.5h7l3 3v8H3z"/><line x1="5.5" y1="7.5" x2="10.5" y2="7.5"/><line x1="5.5" y1="10" x2="9" y2="10"/></svg></span>Activity log</button>
+      <div class="sect">Account</div>
+      <button class="nav" data-v="plan"><span class="gl"><svg class="ic" viewBox="0 0 16 16"><rect x="1.8" y="3.5" width="12.4" height="9" rx="1.6"/><line x1="1.8" y1="6.6" x2="14.2" y2="6.6"/></svg></span>Plan &amp; billing</button>
+      <div class="spacer"></div>
+      <div class="sidefoot">
+        <div class="helper">Signed in as workspace admin</div>
+        <a href="onboarding.html"><span class="gl"><svg class="ic" viewBox="0 0 16 16"><path d="M2.5 8.5l3.5 3.5 7.5-8"/></svg></span>Replay setup walkthrough</a>
+        <a href="index.html"><span class="gl"><svg class="ic" viewBox="0 0 16 16"><path d="M8 2.5L2 7v6.5h12V7z"/></svg></span>All prototypes</a>
+      </div>
+    </aside>
+
+    <div class="main">
+      <div class="pagehead">
+        <h1 id="pgTitle">Overview</h1>
+        <div class="desc" id="pgDesc">Workspace health and setup status for Meridian Bio.</div>
+      </div>
+
+      <div class="content">
+
+        <!-- OVERVIEW -->
+        <section class="view on" id="v-overview">
+          <div class="anno note-block"><span class="tag">PROTOTYPE NOTE</span> This console is the MVP surface that shifts setup and administration onto the customer's IT team. It is the measurement point for the north-star metrics: <b>time-to-onboard</b> and the <b>share of accounts onboarded with zero Valkai staff hours</b>. Deferred to V2: SSO/SAML, SCIM provisioning, agent builder, connector permission scoping, self-serve checkout and credits, custom roles, and EU data residency.</div>
+
+          <div class="grid4">
+            <div class="stat"><div class="v">4 / 25</div><div class="l">Seats in use</div><div class="d">1 invite pending</div></div>
+            <div class="stat"><div class="v">2</div><div class="l">Sources connected</div><div class="d">Google Drive · Benchling</div></div>
+            <div class="stat"><div class="v">1,278</div><div class="l">Documents indexed</div><div class="d">last sync 12 min ago</div></div>
+            <div class="stat"><div class="v">212</div><div class="l">Assistant queries</div><div class="d">this month</div></div>
+          </div>
+
+          <div class="grid2">
+            <div class="card">
+              <h3>Setup status</h3>
+              <div class="sub">Your workspace is fully configured.</div>
+              <div class="setup-row"><span class="st-dot">✓</span><span class="lbl"><b>Workspace provisioned</b></span></div>
+              <div class="setup-row"><span class="st-dot">✓</span><span class="lbl"><b>Domain verified</b> — meridianbio.com</span></div>
+              <div class="setup-row"><span class="st-dot">✓</span><span class="lbl"><b>Sources connected</b> — Google Drive, Benchling</span></div>
+              <div class="setup-row"><span class="st-dot">✓</span><span class="lbl"><b>Data policy set</b> — 90-day retention, US region</span></div>
+              <div class="setup-row"><span class="st-dot">✓</span><span class="lbl"><b>Team invited</b> — 3 joined, 1 pending</span></div>
+            </div>
+            <div class="card">
+              <h3>Usage this month</h3>
+              <div class="sub">Across Meridian Bio</div>
+              <div class="okrow"><span class="check">✓</span><span><b>Top sources</b> — your documents, ClinicalTrials.gov, FDA</span></div>
+              <div class="okrow"><span class="check">✓</span><span><b>38 documents uploaded</b> — most recent: MB-201_protocol_v3.docx</span></div>
+              <div class="okrow"><span class="check">✓</span><span><b>4 of 4 members</b> active this week</span></div>
+              <div class="okrow"><span class="check">✓</span><span><b>Retention policy enforced</b> — 12 documents auto-deleted</span></div>
+              <div class="note">Using <b>4 of 25 seats</b>. Invite more people from Members &amp; seats.</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- MEMBERS -->
+        <section class="view" id="v-members">
+          <div class="anno note-block"><span class="tag">PROTOTYPE NOTE</span> Replaces <b>user provisioning</b>, which today requires a Valkai deployment engagement. Two roles only in the MVP; custom roles, groups, and SSO/SCIM provisioning arrive in V2 because most teams at this size do not need them on day one.</div>
+          <div id="memberList">
+          <div class="card">
+            <h3>Members</h3>
+            <div class="sub">Admins manage the workspace. Members use the Assistant. Using 4 of 25 seats.</div>
+            <div class="invite">
+              <input type="email" placeholder="colleague@meridianbio.com">
+              <select><option>Member</option><option>Admin</option></select>
+              <button class="btn btn-dark">Send invite</button>
+            </div>
+            <table>
+              <thead><tr><th>Name</th><th>Team</th><th>Role</th><th>Last active</th><th></th></tr></thead>
+              <tbody>
+                <tr><td><div class="who"><span class="av2" style="background:#d0442c">M</span><div><b>Maria Chen</b> <span style="color:var(--muted);font-size:11.5px">(you)</span><div style="font-size:11.5px;color:var(--muted)">maria.chen@meridianbio.com</div></div></div></td><td>IT</td><td><span class="pill p-admin">Admin</span></td><td>Now</td><td></td></tr>
+                <tr><td><div class="who"><span class="av2" style="background:#b0672f">P</span><div><b>Priya Nair</b><div style="font-size:11.5px;color:var(--muted)">priya@meridianbio.com</div></div></div></td><td>Regulatory Affairs</td><td><span class="pill p-member">Member</span></td><td>2h ago</td><td style="text-align:right"><button class="btn btn-ghost btn-sm" type="button" onclick="openMember('Priya Nair','priya@meridianbio.com','P','#b0672f','Regulatory Affairs')">Manage</button></td></tr>
+                <tr><td><div class="who"><span class="av2" style="background:#5a4fa2">J</span><div><b>James Okafor</b><div style="font-size:11.5px;color:var(--muted)">james@meridianbio.com</div></div></div></td><td>Quality</td><td><span class="pill p-member">Member</span></td><td>Yesterday</td><td style="text-align:right"><button class="btn btn-ghost btn-sm" type="button" onclick="openMember('James Okafor','james@meridianbio.com','J','#5a4fa2','Quality')">Manage</button></td></tr>
+                <tr><td><div class="who"><span class="av2" style="background:#2f8f83">S</span><div><b>Sofia Reyes</b><div style="font-size:11.5px;color:var(--muted)">sofia@meridianbio.com</div></div></div></td><td>Clinical Ops</td><td><span class="pill p-member">Member</span></td><td>3 days ago</td><td style="text-align:right"><button class="btn btn-ghost btn-sm" type="button" onclick="openMember('Sofia Reyes','sofia@meridianbio.com','S','#2f8f83','Clinical Operations')">Manage</button></td></tr>
+                <tr><td><div class="who"><span class="av2" style="background:#8a8880">D</span><div><b>dana@meridianbio.com</b><div style="font-size:11.5px;color:var(--muted)">Invited Jul 29 by Maria</div></div></div></td><td>Regulatory Affairs</td><td><span class="pill p-pending">Pending</span></td><td>—</td><td style="text-align:right"><button class="btn btn-ghost btn-sm">Resend</button> <button class="btn btn-danger btn-sm">Revoke</button></td></tr>
+              </tbody>
+            </table>
+          </div>
+          </div>
+
+          <!-- Member detail -->
+          <div id="memberDetail" style="display:none">
+            <div class="crumb" style="margin-bottom:10px"><button class="btn btn-ghost btn-sm" type="button" onclick="closeMember()">← Back to members</button></div>
+            <div class="card">
+              <div style="display:flex; align-items:center; gap:13px; margin-bottom:14px;">
+                <span class="av2" id="mdAv" style="background:#b0672f; width:40px; height:40px; font-size:15px">P</span>
+                <div style="flex:1">
+                  <div style="font-size:15px; font-weight:650" id="mdName">Priya Nair</div>
+                  <div style="font-size:12px; color:var(--muted)" id="mdEmail">priya@meridianbio.com</div>
+                </div>
+                <span class="pill p-on">Active</span>
+              </div>
+              <div class="grid2">
+                <div>
+                  <label class="fldlbl">Role</label>
+                  <select id="mdRole" style="width:100%; font:inherit; font-size:12.5px; padding:7px 10px; border:1px solid var(--line); border-radius:8px; background:var(--card); color:var(--ink)">
+                    <option>Member</option><option>Admin</option>
+                  </select>
+                  <div style="font-size:11.5px; color:var(--muted); margin-top:5px">Members use the Assistant. Admins can also manage this workspace.</div>
+                </div>
+                <div>
+                  <label class="fldlbl">Team</label>
+                  <select style="width:100%; font:inherit; font-size:12.5px; padding:7px 10px; border:1px solid var(--line); border-radius:8px; background:var(--card); color:var(--ink)">
+                    <option>Regulatory Affairs</option><option>Quality</option><option>Clinical Operations</option><option>IT</option><option>Unassigned</option>
+                  </select>
+                  <div style="font-size:11.5px; color:var(--muted); margin-top:5px">Used for seat reporting only.</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="grid2">
+              <div class="card">
+                <h3>Access</h3>
+                <div class="sub">Sources this member can search.</div>
+                <div class="dl-row"><div><div class="d1">Google Drive</div><div class="d2">Inherits folder permissions from Drive</div></div><span class="pill p-on">Allowed</span></div>
+                <div class="dl-row"><div><div class="d1">Benchling</div><div class="d2">Notebooks and registry</div></div><span class="pill p-on">Allowed</span></div>
+                <div class="dl-row"><div><div class="d1">Industry sources</div><div class="d2">FDA, EMA, ClinicalTrials.gov, PubMed</div></div><span class="pill p-inc">Included</span></div>
+              </div>
+              <div class="card">
+                <h3>Activity</h3>
+                <div class="sub">Last 30 days</div>
+                <div class="okrow"><span class="check">✓</span><span><b>68 Assistant queries</b></span></div>
+                <div class="okrow"><span class="check">✓</span><span><b>14 documents uploaded</b></span></div>
+                <div class="okrow"><span class="check">✓</span><span><b>6 exports</b> — cited .docx</span></div>
+                <div class="okrow"><span class="check">✓</span><span><b>Last active</b> — today at 2:14 PM</span></div>
+                <div style="margin-top:10px"><button class="btn btn-ghost btn-sm" type="button" onclick="openTab('activity')">View in activity log</button></div>
+              </div>
+            </div>
+
+            <div class="card">
+              <h3>Manage access</h3>
+              <div class="sub">Changes take effect immediately and are recorded in the activity log.</div>
+              <div class="dl-row"><div><div class="d1">Reset password</div><div class="d2">Sends a reset link to this member</div></div><button class="btn btn-ghost btn-sm">Send reset link</button></div>
+              <div class="dl-row"><div><div class="d1">Suspend access</div><div class="d2">Keeps the account and its history, blocks sign-in</div></div><button class="btn btn-ghost btn-sm">Suspend</button></div>
+              <div class="dl-row"><div><div class="d1">Remove from workspace</div><div class="d2">Frees the seat. Documents this member uploaded stay in the workspace.</div></div><button class="btn btn-danger btn-sm">Remove member</button></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- CONNECTORS -->
+        <section class="view" id="v-connectors">
+          <div class="anno note-block"><span class="tag">PROTOTYPE NOTE</span> Replaces the <b>IT deployment engagement</b>. The catalog deliberately covers the systems mid-size companies actually run rather than the enterprise systems in Valkai's current connector line. Connector permission scoping is deferred to V2.</div>
+          <div class="card">
+            <h3>Company sources</h3>
+            <div class="sub">Connect where your documents live. OAuth only — no IT project, no Valkai engineer.</div>
+            <div class="conn-row">
+              <span class="conn-ic"><svg class="ic" viewBox="0 0 16 16"><path d="M1.5 4.5a1 1 0 0 1 1-1h3l1.5 1.5h6.5a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1h-11a1 1 0 0 1-1-1z"/></svg></span>
+              <div class="conn-t"><div class="n">Google Drive</div><div class="s">Connected by Maria Chen · 1,240 files indexed · synced 12 min ago</div></div>
+              <span class="pill p-on">Active</span><span class="tgl" onclick="this.classList.toggle('off')"></span>
+            </div>
+            <div class="conn-row">
+              <span class="conn-ic"><svg class="ic" viewBox="0 0 16 16"><path d="M6 2v4L2.5 12a2 2 0 0 0 1.7 3h7.6a2 2 0 0 0 1.7-3L10 6V2"/><line x1="5" y1="2" x2="11" y2="2"/></svg></span>
+              <div class="conn-t"><div class="n">Benchling</div><div class="s">Connected by Maria Chen · notebooks + registry · synced 1h ago</div></div>
+              <span class="pill p-on">Active</span><span class="tgl" onclick="this.classList.toggle('off')"></span>
+            </div>
+            <div class="conn-row">
+              <span class="conn-ic"><svg class="ic" viewBox="0 0 16 16"><path d="M10.5 4.5l-5 5a1.8 1.8 0 0 0 2.5 2.5l5.5-5.5a3 3 0 0 0-4.2-4.2L3.5 8"/></svg></span>
+              <div class="conn-t"><div class="n">Direct uploads</div><div class="s">Always available · 38 documents</div></div>
+              <span class="pill p-on">Built in</span>
+            </div>
+            <div class="conn-row">
+              <span class="conn-ic"><svg class="ic" viewBox="0 0 16 16"><rect x="2" y="3" width="12" height="10" rx="1.5"/><line x1="2" y1="7" x2="14" y2="7"/><line x1="6" y1="7" x2="6" y2="13"/></svg></span>
+              <div class="conn-t"><div class="n">SharePoint / OneDrive</div><div class="s">Not connected</div></div>
+              <button class="btn btn-ghost btn-sm">Connect</button>
+            </div>
+          </div>
+
+          <div class="grid2">
+            <div class="card">
+              <h3>Industry sources</h3>
+              <div class="sub">Included on every plan, always current — nothing to configure.</div>
+              <div class="conn-row"><span class="conn-ic"><svg class="ic" viewBox="0 0 16 16"><path d="M2 13.5h12M3.5 13.5V7M6.5 13.5V7M9.5 13.5V7M12.5 13.5V7M2 7l6-4.5L14 7z"/></svg></span><div class="conn-t"><div class="n">FDA</div><div class="s">Guidance, approvals, labels</div></div><span class="pill p-inc">Included</span></div>
+              <div class="conn-row"><span class="conn-ic"><svg class="ic" viewBox="0 0 16 16"><circle cx="7" cy="7" r="4.5"/><line x1="10.5" y1="10.5" x2="14" y2="14"/></svg></span><div class="conn-t"><div class="n">ClinicalTrials.gov</div><div class="s">Full registry, updated daily</div></div><span class="pill p-inc">Included</span></div>
+              <div class="conn-row"><span class="conn-ic"><svg class="ic" viewBox="0 0 16 16"><path d="M3 2.5h7l3 3v8H3z"/><line x1="5.5" y1="7" x2="10.5" y2="7"/></svg></span><div class="conn-t"><div class="n">PubMed</div><div class="s">Literature, updated daily</div></div><span class="pill p-inc">Included</span></div>
+              <div class="conn-row"><span class="conn-ic"><svg class="ic" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6"/><path d="M2 8h12M8 2c1.8 1.8 1.8 10.2 0 12M8 2c-1.8 1.8-1.8 10.2 0 12"/></svg></span><div class="conn-t"><div class="n">European Medicines Agency</div><div class="s">EPARs, guidelines, CTIS</div></div><span class="pill p-inc">Included</span></div>
+            </div>
+            <div class="card">
+              <h3>Enterprise systems</h3>
+              <div class="sub">These require a managed deployment and are available on the Growth plan.</div>
+              <div class="conn-row"><span class="conn-ic"><svg class="ic" viewBox="0 0 16 16"><rect x="2.5" y="2.5" width="11" height="11" rx="1.5"/><line x1="2.5" y1="6.5" x2="13.5" y2="6.5"/><line x1="6.5" y1="6.5" x2="6.5" y2="13.5"/></svg></span><div class="conn-t"><div class="n">Veeva Vault</div><div class="s">Permission-mirrored sync, managed rollout</div></div><span class="pill p-v2">Enterprise</span></div>
+              <div class="conn-row"><span class="conn-ic"><svg class="ic" viewBox="0 0 16 16"><rect x="2.5" y="2.5" width="11" height="11" rx="1.5"/><line x1="2.5" y1="6.5" x2="13.5" y2="6.5"/><line x1="6.5" y1="6.5" x2="6.5" y2="13.5"/></svg></span><div class="conn-t"><div class="n">Medidata</div><div class="s">Clinical data, partner-gated APIs</div></div><span class="pill p-v2">Enterprise</span></div>
+              <div class="conn-row"><span class="conn-ic"><svg class="ic" viewBox="0 0 16 16"><rect x="2.5" y="2.5" width="11" height="11" rx="1.5"/><line x1="2.5" y1="6.5" x2="13.5" y2="6.5"/><line x1="6.5" y1="6.5" x2="6.5" y2="13.5"/></svg></span><div class="conn-t"><div class="n">Documentum</div><div class="s">Legacy DMS, managed rollout</div></div><span class="pill p-v2">Enterprise</span></div>
+              <div class="note">Already running one of these? <b>Talk to us</b> about a managed deployment.</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- DATA -->
+        <section class="view" id="v-data">
+          <div class="anno note-block"><span class="tag">PROTOTYPE NOTE</span> Replaces the <b>security review</b>, which today runs as an email thread with Valkai. Publishing the packet and the retention controls here is what lets a customer's security reviewer clear the vendor without us. EU residency and Part 11-aware audit trails are V2.</div>
+          <div class="grid2">
+            <div class="card">
+              <h3>How we handle your data</h3>
+              <div class="sub">Standing guarantees on every plan — enforced everywhere.</div>
+              <div class="okrow"><span class="check">✓</span><span><b>Never used for training.</b> Your documents do not train any model — ours or our providers'. Zero-retention inference terms are in place with all model vendors.</span></div>
+              <div class="okrow"><span class="check">✓</span><span><b>Encrypted and isolated.</b> Encrypted in transit and at rest; your workspace index is never blended with another customer's.</span></div>
+              <div class="okrow"><span class="check">✓</span><span><b>Delete means delete.</b> Removing a document purges the file, its index entries, and derived artifacts within minutes.</span></div>
+            </div>
+            <div class="card">
+              <h3>Security documents</h3>
+              <div class="sub">Everything your security reviewer will ask for — no email thread required.</div>
+              <div class="dl-row"><div><div class="d1">SOC 2 Type II report</div><div class="d2">Issued May 2026 · under NDA click-through</div></div><button class="btn btn-ghost btn-sm">Download</button></div>
+              <div class="dl-row"><div><div class="d1">Data Processing Agreement</div><div class="d2">Pre-signed, standard terms</div></div><button class="btn btn-ghost btn-sm">Download</button></div>
+              <div class="dl-row"><div><div class="d1">Security questionnaire (CAIQ)</div><div class="d2">Pre-answered, current</div></div><button class="btn btn-ghost btn-sm">Download</button></div>
+              <div class="dl-row"><div><div class="d1">Subprocessor list</div><div class="d2">Incl. model providers · updated Jul 2026</div></div><button class="btn btn-ghost btn-sm">Download</button></div>
+            </div>
+          </div>
+          <div class="grid2">
+            <div class="card">
+              <h3>Retention policy</h3>
+              <div class="sub">Applies to uploaded documents and connector-synced copies.</div>
+              <label class="radio-row"><input type="radio" name="ret"><span><b>Keep until deleted</b> — documents stay until someone removes them</span></label>
+              <label class="radio-row"><input type="radio" name="ret" checked><span><b>Auto-delete after 90 days</b> — recommended for milestone-driven work</span></label>
+              <label class="radio-row"><input type="radio" name="ret"><span><b>Auto-delete after 30 days</b> — strictest posture</span></label>
+              <div class="note">Data is stored in the <b>US region</b>. EU residency is available on the Growth plan.</div>
+            </div>
+            <div class="card">
+              <h3>Danger zone</h3>
+              <div class="sub">Immediate, workspace-wide, and logged.</div>
+              <div class="dl-row"><div><div class="d1">Export all workspace data</div><div class="d2">Documents, chats, activity log</div></div><button class="btn btn-ghost btn-sm">Export</button></div>
+              <div class="dl-row"><div><div class="d1">Delete all workspace data</div><div class="d2">Purges every document, index, and output</div></div><button class="btn btn-danger btn-sm">Delete all data</button></div>
+              <div class="note"><b>Scope note:</b> Valkai is a research and drafting assistant, not a validated system of record. Outputs are reviewed by your team before entering any regulated process; the activity log supports your records but does not claim 21 CFR Part 11 compliance.</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ACTIVITY -->
+        <section class="view" id="v-activity">
+          <div class="anno note-block"><span class="tag">PROTOTYPE NOTE</span> Replaces the <b>named Valkai contact</b> who today answers "what has this been used for?" for auditors and leadership. Streaming events to a customer SIEM is deferred to V2.</div>
+          <div class="card">
+            <h3>Activity log</h3>
+            <div class="sub">Every upload, query, download, and setting change — exportable for your records and your auditors.</div>
+            <div class="filter-row">
+              <select><option>All events</option><option>Documents</option><option>Assistant queries</option><option>Admin changes</option><option>Data &amp; security</option></select>
+              <select><option>All members</option><option>Maria Chen</option><option>Priya Nair</option><option>James Okafor</option></select>
+              <select><option>Last 30 days</option><option>Last 90 days</option><option>All time</option></select>
+              <div class="sp"></div>
+              <button class="btn btn-ghost btn-sm">Export CSV</button>
+            </div>
+            <table>
+              <thead><tr><th>When</th><th>Who</th><th>Event</th></tr></thead>
+              <tbody>
+                <tr><td style="white-space:nowrap">Today · 2:14 PM</td><td>Priya Nair</td><td>Assistant query on <b>MB-201_protocol_v3.docx</b> · sources: company documents + ClinicalTrials.gov</td></tr>
+                <tr><td style="white-space:nowrap">Today · 2:02 PM</td><td>Priya Nair</td><td>Uploaded <b>MB-201_protocol_v3.docx</b> (4.2 MB)</td></tr>
+                <tr><td style="white-space:nowrap">Today · 11:40 AM</td><td>Sofia Reyes</td><td>Exported <b>Benchmark summary (cited .docx)</b></td></tr>
+                <tr><td style="white-space:nowrap">Yesterday · 4:31 PM</td><td>James Okafor</td><td>Assistant query · sources: FDA guidance only</td></tr>
+                <tr><td style="white-space:nowrap">Yesterday · 9:12 AM</td><td>Maria Chen</td><td>Changed retention policy → <b>auto-delete after 90 days</b></td></tr>
+                <tr><td style="white-space:nowrap">Jul 29 · 5:03 PM</td><td>Maria Chen</td><td>Invited <b>dana@meridianbio.com</b> as Member</td></tr>
+                <tr><td style="white-space:nowrap">Jul 29 · 4:58 PM</td><td>Maria Chen</td><td>Downloaded <b>Data Processing Agreement</b></td></tr>
+                <tr><td style="white-space:nowrap">Jul 29 · 4:41 PM</td><td>Maria Chen</td><td>Connected <b>Benchling</b> (OAuth, read-only)</td></tr>
+                <tr><td style="white-space:nowrap">Jul 29 · 4:36 PM</td><td>Maria Chen</td><td>Connected <b>Google Drive</b> (OAuth, read-only)</td></tr>
+                <tr><td style="white-space:nowrap">Jul 29 · 4:33 PM</td><td>Maria Chen</td><td>Verified domain <b>meridianbio.com</b></td></tr>
+                <tr><td style="white-space:nowrap">Jul 29 · 4:29 PM</td><td>Elena Vargas</td><td>Created workspace <b>Meridian Bio</b> from valkai.com · Team plan</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- PLAN -->
+        <section class="view" id="v-plan">
+          <div class="anno note-block"><span class="tag">PROTOTYPE NOTE</span> Replaces <b>procurement and per-change support tickets</b>. The MVP keeps purchasing as a light human sale, so this page covers <b>entitlements</b> rather than checkout — self-serve card checkout, usage credits, and a spend dashboard follow in V2 once pricing is validated with the Trusted Testers cohort.</div>
+          <div class="grid2">
+            <div class="card">
+              <h3>Your plan</h3>
+              <div class="sub">Team · 25 seats · invoiced annually · renews Aug 13, 2027</div>
+              <div class="okrow"><span class="check">✓</span><span><b>Assistant</b> for all seats, unlimited use (fair use policy)</span></div>
+              <div class="okrow"><span class="check">✓</span><span><b>Connectors</b> — Google Drive, SharePoint/OneDrive, Benchling, direct upload</span></div>
+              <div class="okrow"><span class="check">✓</span><span><b>Industry sources</b> — FDA, EMA, ClinicalTrials.gov, PubMed included</span></div>
+              <div class="okrow"><span class="check">✓</span><span><b>Billing</b> — invoice, net 30 · billing@meridianbio.com</span></div>
+              <div style="margin-top:10px; display:flex; gap:8px;">
+                <button class="btn btn-ghost btn-sm">Download invoices</button>
+                <button class="btn btn-ghost btn-sm">Update billing contact</button>
+              </div>
+            </div>
+            <div class="card">
+              <h3>Seats</h3>
+              <div class="sub">4 of 25 in use · add seats yourself up to your contracted cap</div>
+              <div class="meter"><div style="width:16%"></div></div>
+              <table style="margin-top:8px">
+                <thead><tr><th>Team</th><th>Seats</th><th>Active this week</th></tr></thead>
+                <tbody>
+                  <tr><td>Regulatory Affairs</td><td>2</td><td>2</td></tr>
+                  <tr><td>Quality</td><td>1</td><td>1</td></tr>
+                  <tr><td>Clinical Operations</td><td>1</td><td>1</td></tr>
+                  <tr><td>Unassigned</td><td>21</td><td>—</td></tr>
+                </tbody>
+              </table>
+              <div style="margin-top:10px; display:flex; gap:8px;">
+                <button class="btn btn-dark btn-sm">Add seats</button>
+                <button class="btn btn-ghost btn-sm">Request a quote</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </div>
+
+      <div class="footnote">
+        Prototype 3 of 3 · admin.valkai.com · <a href="index.html">All prototypes</a> · <a href="website.html">Purchase journey</a> · <a href="onboarding.html">Admin setup</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<button class="notestoggle" type="button" id="ntoggle" onclick="toggleNotes()" aria-pressed="false">Show prototype notes</button>
+
+<script>
+  var META = {
+    overview: ['Overview', 'Workspace health and setup status for Meridian Bio.'],
+    members: ['Members & seats', 'Invite, remove, and manage the people using Valkai at Meridian Bio.'],
+    connectors: ['Connectors', 'Control which data sources Valkai can access, and revoke them at any time.'],
+    data: ['Data & retention', 'Data-handling guarantees, retention policy, and security documentation.'],
+    activity: ['Activity log', 'A complete, exportable record of workspace activity.'],
+    plan: ['Plan & billing', 'Your entitlements, seat usage, and billing details.']
+  };
+  function toggleNotes() {
+    var on = document.body.classList.toggle('notes');
+    var b = document.getElementById('ntoggle');
+    b.textContent = on ? 'Hide prototype notes' : 'Show prototype notes';
+    b.setAttribute('aria-pressed', on ? 'true' : 'false');
+  }
+  function openMember(name, email, initial, color, team) {
+    document.getElementById('memberList').style.display = 'none';
+    document.getElementById('memberDetail').style.display = 'block';
+    document.getElementById('mdName').textContent = name;
+    document.getElementById('mdEmail').textContent = email;
+    var av = document.getElementById('mdAv');
+    av.textContent = initial; av.style.background = color;
+    document.getElementById('pgTitle').textContent = name;
+    document.getElementById('pgDesc').textContent = team + ' · member of Meridian Bio';
+    window.scrollTo(0, 0);
+  }
+  function closeMember() {
+    document.getElementById('memberDetail').style.display = 'none';
+    document.getElementById('memberList').style.display = 'block';
+    document.getElementById('pgTitle').textContent = META.members[0];
+    document.getElementById('pgDesc').textContent = META.members[1];
+    window.scrollTo(0, 0);
+  }
+  function openTab(k) {
+    document.querySelector('.side button.nav[data-v="' + k + '"]').click();
+  }
+  var navs = document.querySelectorAll('.side button.nav');
+  var views = document.querySelectorAll('.view');
+  navs.forEach(function (b) {
+    b.addEventListener('click', function () {
+      navs.forEach(function (x) { x.classList.remove('on'); });
+      views.forEach(function (v) { v.classList.remove('on'); });
+      b.classList.add('on');
+      var k = b.dataset.v;
+      var md = document.getElementById('memberDetail');
+      if (md) { md.style.display = 'none'; document.getElementById('memberList').style.display = 'block'; }
+      document.getElementById('v-' + k).classList.add('on');
+      document.getElementById('pgTitle').textContent = META[k][0];
+      document.getElementById('pgDesc').textContent = META[k][1];
+      window.scrollTo(0, 0);
+    });
+  });
+</script>
+</body>
+</html>

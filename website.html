@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Valkai — "Try Valkai" Purchase Journey (Prototype)</title>
+<style>
+  :root {
+    --canvas: #faf9f4; --card: #ffffff; --card-alt: #f4f3ec; --line: #e9e7de; --line-soft: #efede4;
+    --ink: #2a2924; --ink-2: #6f6d63; --muted: #9a988c; --charcoal: #3b3a34; --charcoal-h: #2b2a25;
+    --brand-red: #d0442c; --blue: #4180d3; --blue-soft: #eaf1fa; --green: #4a9c68; --green-soft: #ecf4ee;
+    --amber: #c08a1e; --amber-soft: #f9f2e0; --dark: #1c1b18;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+    background: #e8e6dd; color: var(--ink); font-size: 14px; line-height: 1.5;
+    -webkit-font-smoothing: antialiased; padding: 18px;
+  }
+  svg.ic { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; flex: 0 0 auto; }
+
+  /* Browser chrome */
+  .browser { max-width: 1180px; margin: 0 auto; border-radius: 12px; overflow: hidden; border: 1px solid #d6d4c9; box-shadow: 0 8px 28px rgba(0,0,0,0.09); background: var(--canvas); }
+  .chrome { display: flex; align-items: center; gap: 10px; padding: 9px 13px; background: #ededea; border-bottom: 1px solid #dcdad2; }
+  .dots { display: flex; gap: 6px; }
+  .dots i { width: 10px; height: 10px; border-radius: 50%; display: block; }
+  .urlbar { flex: 1; background: #fff; border: 1px solid #dcdad2; border-radius: 999px; padding: 4px 12px; font-size: 11.5px; color: var(--ink-2); text-align: center; }
+  .urlbar b { color: var(--ink); font-weight: 600; }
+
+  /* Site nav */
+  .sitenav { display: flex; align-items: center; gap: 26px; padding: 15px 30px; background: var(--canvas); border-bottom: 1px solid var(--line); }
+  .logo { display: flex; align-items: center; gap: 8px; }
+  .logo .mark { width: 18px; height: 18px; background: var(--brand-red); clip-path: polygon(0 22%, 100% 0, 56% 100%, 40% 56%); }
+  .logo .word { font-weight: 650; font-size: 15px; letter-spacing: -0.01em; }
+  .sitenav .links { display: flex; gap: 20px; flex: 1; }
+  .sitenav .links a { font-size: 13px; color: var(--ink-2); text-decoration: none; }
+  .sitenav .links a:hover { color: var(--ink); }
+  .navcta { display: flex; align-items: center; gap: 12px; }
+  .navcta a.login { font-size: 13px; color: var(--ink-2); text-decoration: none; }
+  .btn { font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; border-radius: 8px; padding: 8px 16px; border: 1px solid transparent; text-decoration: none; display: inline-block; }
+  .btn-dark { background: var(--charcoal); color: #fff; }
+  .btn-dark:hover { background: var(--charcoal-h); }
+  .btn-red { background: var(--brand-red); color: #fff; }
+  .btn-red:hover { background: #b93a25; }
+  .btn-ghost { background: var(--card); color: var(--ink); border-color: var(--line); }
+  .btn-ghost:hover { border-color: #cfcdc2; }
+  .btn-sm { font-size: 12px; padding: 5px 12px; }
+  .btn-lg { font-size: 14px; padding: 11px 22px; }
+
+  /* NEW badge on Try Valkai */
+  .newpill { position: relative; }
+  .newpill::after {
+    content: "NEW"; position: absolute; top: -8px; right: -12px;
+    font-size: 8.5px; font-weight: 800; letter-spacing: 0.04em;
+    background: var(--blue); color: #fff; border-radius: 999px; padding: 2px 5px;
+  }
+
+  /* Stage */
+  .stage { background: var(--canvas); min-height: 560px; }
+  .screen { display: none; }
+  .screen.on { display: block; }
+  .jstep { display: none; }
+  .jstep.on { display: block; }
+
+  /* Landing */
+  .hero { padding: 62px 30px 30px; text-align: center; }
+  .hero h1 { font-size: 40px; font-weight: 650; letter-spacing: -0.03em; margin-bottom: 12px; }
+  .hero p { font-size: 15.5px; color: var(--ink-2); max-width: 620px; margin: 0 auto 26px; }
+  .hero .btns { display: flex; gap: 11px; justify-content: center; }
+  .hero .micro { font-size: 12px; color: var(--muted); margin-top: 12px; }
+  .band { border-top: 1px solid var(--line); padding: 26px 30px 40px; }
+  .band .lbl { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.09em; color: var(--muted); font-weight: 700; text-align: center; margin-bottom: 16px; }
+  .logos { display: flex; justify-content: center; gap: 30px; flex-wrap: wrap; font-size: 13px; color: var(--muted); font-weight: 600; }
+  .three { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; padding: 0 30px 44px; }
+  .tile { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; }
+  .tile h3 { font-size: 14px; font-weight: 650; margin-bottom: 5px; }
+  .tile p { font-size: 12.5px; color: var(--ink-2); }
+  .callout-band { background: var(--card-alt); border-top: 1px solid var(--line); padding: 34px 30px 38px; text-align: center; }
+  .callout-band h2 { font-size: 21px; font-weight: 650; letter-spacing: -0.015em; margin-bottom: 6px; }
+  .callout-band p { font-size: 13.5px; color: var(--ink-2); max-width: 560px; margin: 0 auto 16px; }
+
+  /* Social proof */
+  .proof { border-top: 1px solid var(--line); padding: 18px 30px; text-align: center; font-size: 13px; color: var(--ink-2); background: var(--card-alt); }
+  .proof b { color: var(--ink); font-weight: 650; }
+
+  /* Feature sections */
+  .feat { display: grid; grid-template-columns: 1fr 1fr; gap: 34px; align-items: center; padding: 40px 30px; border-top: 1px solid var(--line); }
+  .feat.rev .feat-t { order: 2; }
+  .feat .k { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.09em; color: var(--muted); font-weight: 700; margin-bottom: 8px; }
+  .feat h2 { font-size: 21px; font-weight: 650; letter-spacing: -0.02em; margin-bottom: 9px; }
+  .feat p { font-size: 13.5px; color: var(--ink-2); margin-bottom: 13px; }
+  ul.ticks { list-style: none; }
+  ul.ticks li { font-size: 12.5px; color: var(--ink-2); padding: 4px 0 4px 20px; position: relative; }
+  ul.ticks li::before { content: "✓"; position: absolute; left: 0; color: var(--blue); font-weight: 800; font-size: 11px; }
+
+  /* ── Hero product visual ─────────────── */
+  .heroshot { padding: 4px 30px 44px; }
+  .appframe {
+    max-width: 880px; margin: 0 auto; background: var(--card); border: 1px solid var(--line);
+    border-radius: 14px; overflow: hidden; box-shadow: 0 14px 44px rgba(0,0,0,0.10);
+  }
+  .afbar { display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: var(--card-alt); border-bottom: 1px solid var(--line); }
+  .afbar i { width: 8px; height: 8px; border-radius: 50%; display: block; background: #d6d4c9; }
+  .afbar .t { font-size: 10.5px; color: var(--muted); margin-left: 6px; }
+  .afbody { display: flex; min-height: 300px; }
+  .afside { width: 150px; flex: 0 0 150px; background: var(--sidebar); border-right: 1px solid var(--line); padding: 10px 8px; }
+  .afside .sgroup { border: 1px solid var(--line); border-radius: 7px; padding: 5px; margin-bottom: 10px; background: rgba(255,255,255,0.5); }
+  .afside .sitem { display: flex; align-items: center; gap: 6px; font-size: 10.5px; color: var(--ink-2); padding: 4px 6px; border-radius: 5px; }
+  .afside .sitem.on { background: #eceae1; color: var(--ink); font-weight: 600; }
+  .afside .sdot { width: 9px; height: 9px; border-radius: 2px; background: #d9d7cc; flex: 0 0 auto; }
+  .afside .slabel { font-size: 9px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); font-weight: 700; padding: 6px 6px 3px; }
+  .afside .sline { height: 6px; border-radius: 3px; background: #e6e4da; margin: 7px 6px; }
+  .afside .sline.w2 { width: 74%; } .afside .sline.w3 { width: 58%; } .afside .sline.w4 { width: 84%; }
+  .afmain { flex: 1; padding: 16px 18px; min-width: 0; }
+  .afq { display: flex; justify-content: flex-end; margin-bottom: 12px; }
+  .afq span { background: var(--card-alt); border-radius: 10px; padding: 8px 12px; font-size: 12px; max-width: 78%; }
+  .afa { font-size: 12px; color: var(--ink-2); margin-bottom: 10px; }
+  .afa b { color: var(--ink); }
+  table.aftab { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+  table.aftab th { text-align: left; font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); font-weight: 700; padding: 5px 7px; border-bottom: 1px solid var(--line); }
+  table.aftab td { font-size: 11px; padding: 6px 7px; border-bottom: 1px solid var(--line-soft); color: var(--ink-2); }
+  table.aftab td:first-child { color: var(--ink); font-weight: 600; }
+  table.aftab tr:last-child td { border-bottom: none; }
+  .afcite { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .afcite .lb { font-size: 10px; color: var(--muted); margin-right: 2px; }
+  .afcite span.c { font-size: 10px; font-weight: 600; color: #2b5896; background: var(--blue-soft); border-radius: 999px; padding: 3px 8px; }
+  .afsrc { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--line-soft); display: flex; gap: 6px; flex-wrap: wrap; }
+  .afsrc span { font-size: 9.5px; font-weight: 600; color: var(--ink-2); border: 1px solid var(--line); border-radius: 999px; padding: 3px 8px; background: var(--card-alt); }
+
+  /* logo band marks */
+  .logos span { display: inline-flex; align-items: center; gap: 7px; }
+  .logos .lm { width: 13px; height: 13px; border-radius: 3px; background: #d3d1c6; display: inline-block; flex: 0 0 auto; }
+
+  /* Visual mock panels inside features */
+  .vw { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; box-shadow: 0 6px 22px rgba(0,0,0,0.06); }
+  .vw.pad0 { padding: 0; overflow: hidden; }
+
+  /* mini admin console */
+  .mc-top { display: flex; align-items: center; gap: 8px; padding: 9px 12px; border-bottom: 1px solid var(--line); background: var(--card-alt); }
+  .mc-top .mark2 { width: 12px; height: 12px; background: var(--brand-red); clip-path: polygon(0 22%, 100% 0, 56% 100%, 40% 56%); }
+  .mc-top .nm { font-size: 11px; font-weight: 650; }
+  .mc-top .pill2 { font-size: 8.5px; font-weight: 800; letter-spacing: 0.05em; color: var(--ink-2); background: var(--card); border: 1px solid var(--line); border-radius: 4px; padding: 1.5px 5px; }
+  .mc-top .url { margin-left: auto; font-size: 9.5px; color: var(--muted); }
+  .mc-tabs { display: flex; gap: 2px; padding: 0 12px; border-bottom: 1px solid var(--line); }
+  .mc-tabs span { font-size: 10.5px; color: var(--muted); padding: 7px 8px; border-bottom: 1.5px solid transparent; }
+  .mc-tabs span.on { color: var(--ink); font-weight: 650; border-bottom-color: var(--ink); }
+  .mc-body { padding: 12px; }
+  .mc-stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-bottom: 10px; }
+  .mc-stats div { background: var(--card-alt); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
+  .mc-stats b { display: block; font-size: 15px; font-weight: 700; letter-spacing: -0.01em; }
+  .mc-stats span { font-size: 9.5px; color: var(--muted); }
+  .mc-row { display: flex; align-items: center; gap: 8px; font-size: 11px; padding: 7px 0; border-bottom: 1px solid var(--line-soft); }
+  .mc-row:last-child { border-bottom: none; }
+  .mc-row .av { width: 18px; height: 18px; border-radius: 50%; color: #fff; font-size: 8.5px; font-weight: 700; display: grid; place-items: center; flex: 0 0 auto; }
+  .mc-row .nm2 { flex: 1; color: var(--ink); }
+  .mc-tag { font-size: 9.5px; font-weight: 700; border-radius: 999px; padding: 2.5px 8px; }
+  .t-admin { background: var(--blue-soft); color: #2b5896; }
+  .t-mem { background: var(--card-alt); color: var(--ink-2); border: 1px solid var(--line); }
+  .t-ok { background: var(--green-soft); color: var(--green); }
+  .vq { font-size: 12.5px; background: var(--card-alt); border-radius: 9px; padding: 9px 11px; margin-bottom: 10px; color: var(--ink); }
+  .va { font-size: 12.5px; color: var(--ink-2); line-height: 1.5; }
+  .va b { color: var(--ink); }
+  .vcite { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .vcite span { font-size: 10.5px; font-weight: 600; color: #2b5896; background: var(--blue-soft); border-radius: 999px; padding: 3px 8px; }
+  .vrow { display: flex; align-items: center; gap: 9px; font-size: 12.5px; padding: 8px 0; border-bottom: 1px solid var(--line-soft); color: var(--ink); }
+  .vrow:last-child { border-bottom: none; }
+  .vrow span:nth-child(2), .vrow span:first-child:not(.vic) { flex: 1; }
+  .vic { width: 22px; height: 22px; border-radius: 6px; background: var(--card-alt); border: 1px solid var(--line); display: grid; place-items: center; color: var(--muted); font-size: 10px; flex: 0 0 auto; }
+  .vok { font-size: 10.5px; font-weight: 700; color: var(--green); background: var(--green-soft); border-radius: 999px; padding: 3px 9px; }
+  .vinc { font-size: 10.5px; font-weight: 700; color: #2b5896; background: var(--blue-soft); border-radius: 999px; padding: 3px 9px; }
+  .vbtn { font-size: 10.5px; font-weight: 700; color: var(--ink-2); border: 1px solid var(--line); border-radius: 999px; padding: 3px 9px; }
+  .vhead { font-size: 10.5px; color: var(--muted); font-weight: 600; border-bottom: 1px solid var(--line-soft); padding-bottom: 8px; margin-bottom: 10px; }
+  .vstats { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-bottom: 6px; }
+  .vstats div { background: var(--card-alt); border-radius: 8px; padding: 8px 10px; }
+  .vstats b { display: block; font-size: 15px; font-weight: 700; }
+  .vstats span { font-size: 10.5px; color: var(--muted); }
+
+  /* Security */
+  .sec { border-top: 1px solid var(--line); padding: 38px 30px; text-align: center; }
+  .sec h2 { font-size: 21px; font-weight: 650; letter-spacing: -0.02em; margin-bottom: 8px; }
+  .secl { font-size: 13.5px; color: var(--ink-2); max-width: 640px; margin: 0 auto 22px; }
+  .secgrid { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; text-align: left; }
+  .sc { background: var(--card); border: 1px solid var(--line); border-radius: 11px; padding: 14px 16px; }
+  .sc h4 { font-size: 12.5px; font-weight: 650; margin-bottom: 4px; }
+  .sc p { font-size: 11.5px; color: var(--ink-2); }
+
+  /* Who band */
+  .who-band { border-top: 1px solid var(--line); padding: 32px 30px 38px; background: var(--card-alt); }
+  .who-band .lbl { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.09em; color: var(--muted); font-weight: 700; text-align: center; margin-bottom: 16px; }
+  .whogrid { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; }
+  .wc { background: var(--card); border: 1px solid var(--line); border-radius: 11px; padding: 14px 16px; }
+  .wc h4 { font-size: 12.5px; font-weight: 650; margin-bottom: 4px; }
+  .wc p { font-size: 11.5px; color: var(--ink-2); }
+
+  @media (max-width: 900px) {
+    .feat { grid-template-columns: 1fr; gap: 22px; }
+    .feat.rev .feat-t { order: 0; }
+    .secgrid, .whogrid { grid-template-columns: 1fr 1fr; }
+    .three { grid-template-columns: 1fr; }
+  }
+
+  /* Journey shell */
+  .jshell { padding: 26px 30px 44px; }
+  .jhead { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; gap: 16px; }
+  .jhead .back { font-size: 12.5px; color: var(--muted); text-decoration: none; }
+  .jhead .back:hover { color: var(--ink-2); }
+  .prog { display: flex; align-items: center; gap: 7px; }
+  .prog .p { display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--muted); }
+  .prog .p .n { width: 17px; height: 17px; border-radius: 50%; border: 1.5px solid var(--line); background: var(--card); display: grid; place-items: center; font-size: 9.5px; font-weight: 800; color: var(--muted); }
+  .prog .p.on { color: var(--ink); font-weight: 650; }
+  .prog .p.on .n { border-color: var(--charcoal); color: var(--ink); }
+  .prog .p.done .n { background: var(--blue-soft); border-color: transparent; color: var(--blue); }
+  .prog .bar { width: 18px; height: 1px; background: var(--line); }
+
+  .center { max-width: 760px; margin: 0 auto; }
+  .narrow { max-width: 560px; margin: 0 auto; }
+  .eyebrow { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); font-weight: 700; margin-bottom: 7px; }
+  h2.step { font-size: 23px; font-weight: 650; letter-spacing: -0.02em; margin-bottom: 6px; }
+  .lede { font-size: 13.5px; color: var(--ink-2); margin-bottom: 22px; }
+
+  /* Plans */
+  .plans { display: grid; grid-template-columns: repeat(3,1fr); gap: 13px; margin-bottom: 16px; }
+  .plan { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 18px; cursor: pointer; position: relative; }
+  .plan:hover { border-color: #cfcdc2; }
+  .plan.sel { border-color: var(--charcoal); box-shadow: 0 0 0 1px var(--charcoal); }
+  .plan .tag { position: absolute; top: -9px; left: 16px; font-size: 9.5px; font-weight: 800; letter-spacing: 0.04em; background: var(--blue); color: #fff; border-radius: 999px; padding: 2.5px 8px; }
+  .plan h3 { font-size: 14.5px; font-weight: 650; }
+  .plan .who { font-size: 11.5px; color: var(--muted); margin-bottom: 10px; }
+  .plan .price { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; }
+  .plan .price span { font-size: 12px; font-weight: 500; color: var(--muted); }
+  .plan .terms { font-size: 11.5px; color: var(--muted); margin: 3px 0 12px; }
+  .plan ul { list-style: none; }
+  .plan li { font-size: 12px; color: var(--ink-2); padding: 3.5px 0; display: flex; gap: 7px; align-items: baseline; }
+  .plan li .ck { color: var(--blue); font-weight: 800; font-size: 11px; }
+  .plan li.off { color: var(--muted); }
+  .plan li.off .ck { color: var(--muted); }
+
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; margin-bottom: 13px; }
+  .card h3 { font-size: 13.5px; font-weight: 650; margin-bottom: 3px; }
+  .card .sub { font-size: 12px; color: var(--muted); margin-bottom: 12px; }
+  label.fld { display: block; margin-bottom: 12px; }
+  label.fld span { display: block; font-size: 12px; font-weight: 600; margin-bottom: 4px; }
+  input[type=text], input[type=email], select {
+    width: 100%; font: inherit; font-size: 13px; padding: 8px 11px;
+    border: 1px solid var(--line); border-radius: 8px; background: var(--card); color: var(--ink);
+  }
+  input::placeholder { color: var(--muted); }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .hint { font-size: 11.5px; color: var(--muted); margin-top: 4px; }
+
+  .promise { display: flex; gap: 8px; align-items: baseline; margin-bottom: 7px; font-size: 12.5px; color: var(--ink-2); }
+  .promise .ck { color: var(--blue); font-weight: 800; }
+  .promise b { color: var(--ink); font-weight: 600; }
+  .doclinks { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 10px; }
+  .doclink { font-size: 11.5px; font-weight: 600; color: var(--ink-2); border: 1px solid var(--line); border-radius: 999px; padding: 4px 11px; background: var(--card); cursor: pointer; }
+  .doclink:hover { border-color: #cfcdc2; color: var(--ink); }
+
+  .summary { background: var(--card-alt); border: 1px solid var(--line); border-radius: 11px; padding: 14px 16px; margin-bottom: 13px; }
+  .srow { display: flex; justify-content: space-between; font-size: 12.5px; padding: 4px 0; color: var(--ink-2); }
+  .srow b { color: var(--ink); }
+  .srow.total { border-top: 1px solid var(--line); margin-top: 7px; padding-top: 9px; font-size: 13.5px; }
+
+  .radio { display: flex; align-items: flex-start; gap: 9px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 9px; margin-bottom: 8px; cursor: pointer; font-size: 12.5px; color: var(--ink-2); background: var(--card); }
+  .radio:hover { border-color: #cfcdc2; }
+  .radio input { margin-top: 2px; accent-color: var(--charcoal); }
+  .radio b { color: var(--ink); font-weight: 600; }
+
+  .note { background: var(--card-alt); border: 1px solid var(--line); border-radius: 10px; padding: 11px 13px; font-size: 12px; color: var(--ink-2); margin-top: 11px; }
+  .note b { color: var(--ink); }
+  .actions { display: flex; align-items: center; gap: 10px; margin-top: 4px; }
+  .actions .spacer { flex: 1; }
+  .actions .skip { font-size: 12px; color: var(--muted); text-decoration: none; cursor: pointer; }
+  .actions .skip:hover { color: var(--ink-2); }
+
+  .done-hero { text-align: center; padding: 10px 0 18px; }
+  .done-hero .tick { width: 46px; height: 46px; border-radius: 50%; background: var(--green-soft); color: var(--green); display: grid; place-items: center; font-size: 22px; font-weight: 800; margin: 0 auto 14px; }
+  .nextcards { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+  .nc { background: var(--card); border: 1px solid var(--line); border-radius: 11px; padding: 16px 18px; }
+  .nc .k { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); font-weight: 700; margin-bottom: 6px; }
+  .nc h4 { font-size: 13.5px; font-weight: 650; margin-bottom: 4px; }
+  .nc p { font-size: 12px; color: var(--ink-2); margin-bottom: 11px; }
+
+  .footnote { text-align: center; font-size: 11px; color: var(--muted); padding: 14px 30px 20px; border-top: 1px solid var(--line); }
+  .footnote a { color: var(--ink-2); }
+</style>
+</head>
+<body>
+<div class="browser">
+  <div class="chrome">
+    <div class="dots"><i style="background:#e06c5a"></i><i style="background:#e3c05c"></i><i style="background:#8fbf7a"></i></div>
+    <div class="urlbar" id="url"><b>valkai.com</b></div>
+  </div>
+
+  <!-- Site nav -->
+  <div class="sitenav">
+    <div class="logo"><span class="mark"></span><span class="word">Valkai</span></div>
+    <div class="links">
+      <a href="#">How It Works</a><a href="#">Who We Are</a><a href="#">Careers</a><a href="#">Security</a>
+    </div>
+    <div class="navcta">
+      <a class="login" href="#">Login</a>
+      <button class="btn btn-ghost btn-sm" onclick="show(0)">Let's Talk</button>
+      <span class="newpill"><button class="btn btn-red btn-sm" onclick="show(1)">Try Valkai</button></span>
+    </div>
+  </div>
+
+  <div class="stage">
+
+    <!-- SCREEN 0 — landing -->
+    <section class="screen on" id="sc0">
+      <div class="hero">
+        <h1>Agent Systems for Life Sciences</h1>
+        <p>Valkai deploys agent systems that accelerate the world's largest pharma, biotech, and medical device companies.</p>
+        <div class="btns">
+          <span class="newpill"><button class="btn btn-red btn-lg" onclick="show(1)">Try Valkai</button></span>
+          <button class="btn btn-ghost btn-lg" onclick="show(0)">Let's Talk</button>
+        </div>
+        <div class="micro">Now available for teams under 1,000 seats — set up in a day, no sales cycle required.</div>
+      </div>
+
+      <!-- Hero product visual -->
+      <div class="heroshot">
+        <div class="appframe">
+          <div class="afbar"><i></i><i></i><i></i><span class="t">Valkai Assistant — Meridian Bio</span></div>
+          <div class="afbody">
+            <div class="afside">
+              <div class="sgroup">
+                <div class="sitem on"><span class="sdot"></span>New chat</div>
+                <div class="sitem"><span class="sdot"></span>My documents</div>
+                <div class="sitem"><span class="sdot"></span>Prompt library</div>
+              </div>
+              <div class="slabel">Recent</div>
+              <div class="sline w4"></div><div class="sline w2"></div><div class="sline w3"></div>
+              <div class="sline w4"></div><div class="sline w2"></div>
+            </div>
+            <div class="afmain">
+              <div class="afq"><span>Compare our MB-201 protocol against Phase 2 celiac trials from the last five years.</span></div>
+              <div class="afa">Searched <b>your documents</b> and <b>ClinicalTrials.gov</b>. Six comparable Phase 2 trials found. Your primary endpoint aligns with four of six; sample size sits below the median.</div>
+              <table class="aftab">
+                <thead><tr><th>Trial</th><th>Primary endpoint</th><th>N</th><th>Duration</th></tr></thead>
+                <tbody>
+                  <tr><td>MB-201 (yours)</td><td>Mucosal healing (VH:CD)</td><td>120</td><td>24 wk</td></tr>
+                  <tr><td>NCT04721…</td><td>Mucosal healing (VH:CD)</td><td>168</td><td>24 wk</td></tr>
+                  <tr><td>NCT05183…</td><td>Symptom score (CeD-GSRS)</td><td>210</td><td>52 wk</td></tr>
+                  <tr><td>NCT04996…</td><td>Mucosal healing (VH:CD)</td><td>145</td><td>26 wk</td></tr>
+                </tbody>
+              </table>
+              <div class="afcite">
+                <span class="lb">Cited from</span>
+                <span class="c">MB-201_v3.docx · p.12</span><span class="c">NCT04721…</span><span class="c">NCT05183…</span><span class="c">NCT04996…</span>
+              </div>
+              <div class="afsrc"><span>My documents</span><span>ClinicalTrials.gov</span><span>FDA</span><span>EMA</span><span>PubMed</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="band">
+        <div class="lbl">Built by leaders in life sciences and AI</div>
+        <div class="logos">
+          <span><i class="lm"></i>Benchling</span><span><i class="lm"></i>OpenAI</span><span><i class="lm"></i>Microsoft</span>
+          <span><i class="lm"></i>Glean</span><span><i class="lm"></i>FDA</span><span><i class="lm"></i>Formation Bio</span>
+        </div>
+      </div>
+      <div class="three">
+        <div class="tile"><h3>Your data, plus the world's</h3><p>Connect Google Drive, SharePoint, or Benchling, and ask questions across your documents together with FDA, EMA, ClinicalTrials.gov, and PubMed.</p></div>
+        <div class="tile"><h3>Answers you can verify</h3><p>Every response is cited back to the source passage — the standard regulatory and quality work actually requires.</p></div>
+        <div class="tile"><h3>Governed from day one</h3><p>Your IT team controls connectors, retention, and access from a dedicated admin console, with an exportable activity log.</p></div>
+      </div>
+      <!-- Social proof -->
+      <div class="proof">
+        <b>20,000+ users</b> across the world's largest pharma, biotech, and medical device companies — now available to teams under 1,000 seats.
+      </div>
+
+      <!-- Feature sections -->
+      <div class="feat">
+        <div class="feat-t">
+          <div class="k">Assistant</div>
+          <h2>Answer regulatory questions in minutes, not weeks</h2>
+          <p>Ask across your own protocols, SOPs, and submissions together with FDA guidance, EMA opinions, ClinicalTrials.gov, and PubMed — in one question. Benchmark a draft protocol against comparable trials, assemble sources for an information request, or check a document against current guidance.</p>
+          <ul class="ticks">
+            <li>Every answer cited back to the source passage</li>
+            <li>Internal and external evidence in a single result</li>
+            <li>Export to Word with the citation trail intact</li>
+          </ul>
+        </div>
+        <div class="feat-v">
+          <div class="vw">
+            <div class="vq">Which FDA guidance applies to our MB-201 pre-IND package, and does our draft address it?</div>
+            <div class="va">Reviewed <b>4 guidance documents</b> against <b>MB-201_preIND_v2.docx</b>. Three requirements are addressed; one gap identified in the nonclinical section.</div>
+            <table class="aftab" style="margin-top:10px">
+              <thead><tr><th>Requirement</th><th>Source</th><th>Status</th></tr></thead>
+              <tbody>
+                <tr><td>Pediatric study plan</td><td>FDA, 2023</td><td><span class="vok">Addressed</span></td></tr>
+                <tr><td>Nonclinical tox package</td><td>ICH M3(R2)</td><td><span class="vbtn">Gap</span></td></tr>
+                <tr><td>CMC stability data</td><td>FDA, 2024</td><td><span class="vok">Addressed</span></td></tr>
+              </tbody>
+            </table>
+            <div class="vcite"><span>Guidance p.14</span><span>ICH M3(R2) §4</span><span>MB-201_preIND_v2.docx p.31</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="feat rev">
+        <div class="feat-t">
+          <div class="k">Connectors</div>
+          <h2>Works with the systems you already run</h2>
+          <p>Connect Google Drive, SharePoint, or Benchling with OAuth in about a minute — no deployment project, no engineering ticket. Regulatory sources are included on every plan and stay current automatically.</p>
+          <ul class="ticks">
+            <li>Google Drive, SharePoint / OneDrive, Benchling, direct upload</li>
+            <li>FDA, EMA, ClinicalTrials.gov, and PubMed included</li>
+            <li>Veeva Vault and Medidata available on Growth</li>
+          </ul>
+        </div>
+        <div class="feat-v">
+          <div class="vw">
+            <svg viewBox="0 0 400 268" width="100%" role="img" aria-label="Diagram: your company sources and included regulatory sources both connect to Valkai">
+              <defs>
+                <style>
+                  .bx { fill: #fbfaf6; stroke: #e9e7de; }
+                  .lb { font: 600 9.5px "Inter", system-ui, sans-serif; fill: #2a2924; }
+                  .sb { font: 500 8px "Inter", system-ui, sans-serif; fill: #6e6c60; }
+                  .hd { font: 700 8px "Inter", system-ui, sans-serif; fill: #6e6c60; letter-spacing: .08em; }
+                  .wire { fill: none; stroke: #d9d7cc; stroke-width: 1.2; }
+                  .wire.live { stroke: #3a72bd; stroke-width: 1.5; }
+                </style>
+              </defs>
+
+              <text class="hd" x="6" y="12">YOUR SOURCES</text>
+              <text class="hd" x="394" y="12" text-anchor="end">INCLUDED</text>
+
+              <!-- left boxes -->
+              <g>
+                <rect class="bx" x="6" y="26" width="118" height="38" rx="9"/>
+                <rect x="16" y="38" width="14" height="14" rx="3.5" fill="#eaf1fa" stroke="#cfe0f4"/>
+                <text class="lb" x="38" y="45">Google Drive</text><text class="sb" x="38" y="56">1,240 files</text>
+
+                <rect class="bx" x="6" y="76" width="118" height="38" rx="9"/>
+                <rect x="16" y="88" width="14" height="14" rx="3.5" fill="#ecf4ee" stroke="#cfe4d6"/>
+                <text class="lb" x="38" y="95">Benchling</text><text class="sb" x="38" y="106">Notebooks</text>
+
+                <rect class="bx" x="6" y="126" width="118" height="38" rx="9"/>
+                <rect x="16" y="138" width="14" height="14" rx="3.5" fill="#f4f3ec" stroke="#e2e0d5"/>
+                <text class="lb" x="38" y="145">SharePoint</text><text class="sb" x="38" y="156">Not connected</text>
+
+                <rect class="bx" x="6" y="176" width="118" height="38" rx="9"/>
+                <rect x="16" y="188" width="14" height="14" rx="3.5" fill="#f9f2e0" stroke="#ecdfc0"/>
+                <text class="lb" x="38" y="195">Uploads</text><text class="sb" x="38" y="206">38 documents</text>
+              </g>
+
+              <!-- wires left -> hub -->
+              <path class="wire live" d="M124 45 C150 45 150 118 168 124"/>
+              <path class="wire live" d="M124 95 C150 95 152 118 168 128"/>
+              <path class="wire" d="M124 145 C150 145 152 140 168 136"/>
+              <path class="wire live" d="M124 195 C150 195 152 152 168 140"/>
+
+              <!-- hub -->
+              <rect x="168" y="98" width="64" height="64" rx="16" fill="#ffffff" stroke="#d9d7cc"/>
+              <path d="M186 118 L206 112 L197 136 L193 126 Z" fill="#d0442c"/>
+              <text class="lb" x="200" y="152" text-anchor="middle">Valkai</text>
+
+              <!-- wires hub -> right -->
+              <path class="wire live" d="M232 124 C252 118 254 44 274 40"/>
+              <path class="wire live" d="M232 128 C252 124 254 92 274 88"/>
+              <path class="wire live" d="M232 134 C252 136 254 140 274 136"/>
+              <path class="wire live" d="M232 138 C252 146 254 182 274 184"/>
+
+              <!-- right chips -->
+              <g>
+                <rect class="bx" x="274" y="26" width="120" height="30" rx="8"/><text class="lb" x="288" y="45">FDA</text>
+                <rect class="bx" x="274" y="74" width="120" height="30" rx="8"/><text class="lb" x="288" y="93">EMA</text>
+                <rect class="bx" x="274" y="122" width="120" height="30" rx="8"/><text class="lb" x="288" y="141">ClinicalTrials.gov</text>
+                <rect class="bx" x="274" y="170" width="120" height="30" rx="8"/><text class="lb" x="288" y="189">PubMed</text>
+              </g>
+
+              <text class="sb" x="200" y="238" text-anchor="middle">One question, answered across both — with citations.</text>
+              <text class="sb" x="200" y="252" text-anchor="middle">OAuth setup in about a minute. No deployment project.</text>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <div class="feat">
+        <div class="feat-t">
+          <div class="k">Admin control</div>
+          <h2>Governed by your IT team, from day one</h2>
+          <p>A dedicated admin console at admin.valkai.com gives your administrators everything they need to run Valkai without us: user provisioning, connector controls, retention policy, and a complete activity log they can export for auditors.</p>
+          <ul class="ticks">
+            <li>Add and remove people, manage seats against your plan</li>
+            <li>Set retention and delete data on your own terms</li>
+            <li>Exportable activity log for your records</li>
+          </ul>
+        </div>
+        <div class="feat-v">
+          <div class="vw pad0">
+            <div class="mc-top">
+              <span class="mark2"></span><span class="nm">Valkai</span><span class="pill2">ADMIN</span>
+              <span class="url">admin.valkai.com</span>
+            </div>
+            <div class="mc-tabs">
+              <span class="on">Overview</span><span>Members</span><span>Connectors</span><span>Data</span><span>Activity</span>
+            </div>
+            <div class="mc-body">
+              <div class="mc-stats">
+                <div><b>4 / 25</b><span>Seats in use</span></div>
+                <div><b>2</b><span>Sources</span></div>
+                <div><b>0</b><span>Incidents</span></div>
+              </div>
+              <div class="mc-row"><span class="av" style="background:#d0442c">M</span><span class="nm2">Maria Chen</span><span class="mc-tag t-admin">Admin</span></div>
+              <div class="mc-row"><span class="av" style="background:#b0672f">P</span><span class="nm2">Priya Nair</span><span class="mc-tag t-mem">Member</span></div>
+              <div class="mc-row"><span class="av" style="background:#5a4fa2">J</span><span class="nm2">James Okafor</span><span class="mc-tag t-mem">Member</span></div>
+              <div class="mc-row"><span class="nm2" style="color:var(--muted)">Retention policy</span><span class="mc-tag t-ok">Auto-delete 90 days</span></div>
+              <div class="mc-row"><span class="nm2" style="color:var(--muted)">Activity log</span><span class="mc-tag t-mem">Export CSV</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Security -->
+      <div class="sec">
+        <h2>Secure and straightforward to deploy</h2>
+        <p class="secl">Your documents are never used to train any model — ours or our providers'. Everything is encrypted in transit and at rest, and your workspace is isolated from every other customer's.</p>
+        <div class="secgrid">
+          <div class="sc"><h4>Never trained on</h4><p>Zero-retention terms with all model vendors.</p></div>
+          <div class="sc"><h4>Isolated by workspace</h4><p>Your index is never blended with another customer's.</p></div>
+          <div class="sc"><h4>Delete means delete</h4><p>Purges the file, its index entries, and derived artifacts.</p></div>
+          <div class="sc"><h4>Documentation on demand</h4><p>SOC 2 Type II, pre-signed DPA, CAIQ, and subprocessor list.</p></div>
+        </div>
+      </div>
+
+      <!-- Who it is for -->
+      <div class="who-band">
+        <div class="lbl">Built for the teams doing the filing</div>
+        <div class="whogrid">
+          <div class="wc"><h4>Regulatory Affairs</h4><p>Submission drafting, information requests, and regulatory intelligence.</p></div>
+          <div class="wc"><h4>Quality</h4><p>SOPs, deviations, CAPA responses, and audit preparation.</p></div>
+          <div class="wc"><h4>Clinical Operations</h4><p>Protocol design, trial benchmarking, and study documentation.</p></div>
+          <div class="wc"><h4>Medical Writing</h4><p>First drafts assembled from your own sources, with citations.</p></div>
+        </div>
+      </div>
+
+      <!-- Final CTA -->
+      <div class="callout-band">
+        <h2>Start today, without a sales cycle</h2>
+        <p>Pick a plan, verify your domain, connect a source, and invite your team. Most workspaces are live the same afternoon — and a human is available at any point if you would rather talk first.</p>
+        <div style="display:flex;gap:10px;justify-content:center">
+          <span class="newpill"><button class="btn btn-dark" onclick="show(1)">Try Valkai</button></span>
+          <button class="btn btn-ghost" onclick="show(0)">Contact sales</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- JOURNEY -->
+    <section class="screen" id="sc1">
+      <div class="jshell">
+        <div class="jhead">
+          <a class="back" onclick="show(0)">← Back to valkai.com</a>
+          <div class="prog" id="prog">
+            <div class="p on" data-s="1"><span class="n">1</span>Choose a plan</div><div class="bar"></div>
+            <div class="p" data-s="2"><span class="n">2</span>Your details</div><div class="bar"></div>
+            <div class="p" data-s="3"><span class="n">3</span>Review &amp; security</div><div class="bar"></div>
+            <div class="p" data-s="4"><span class="n">4</span>Confirm</div>
+          </div>
+        </div>
+
+        <!-- Step 1 — plans -->
+        <div class="jstep on" id="j1">
+          <div class="center">
+            <div class="eyebrow">Step 1 of 4</div>
+            <h2 class="step">Choose a plan</h2>
+            <p class="lede">Published pricing — no quote required to see what this costs. Most mid-size regulatory and quality teams start on Team.</p>
+            <div class="plans">
+              <div class="plan" onclick="pick(this,'Starter','10 seats','$600')">
+                <h3>Starter</h3><div class="who">Small teams getting started</div>
+                <div class="price">$60<span>/seat/mo</span></div><div class="terms">10 seats · billed annually</div>
+                <ul>
+                  <li><span class="ck">✓</span>Assistant for all seats</li>
+                  <li><span class="ck">✓</span>Drive, SharePoint, Benchling</li>
+                  <li><span class="ck">✓</span>FDA, EMA, CT.gov, PubMed</li>
+                  <li><span class="ck">✓</span>Admin console</li>
+                  <li class="off"><span class="ck">—</span>Priority support</li>
+                </ul>
+              </div>
+              <div class="plan sel" onclick="pick(this,'Team','25 seats','$2,500')">
+                <span class="tag">RECOMMENDED</span>
+                <h3>Team</h3><div class="who">Mid-size regulatory &amp; quality</div>
+                <div class="price">$100<span>/seat/mo</span></div><div class="terms">25 seats · billed annually</div>
+                <ul>
+                  <li><span class="ck">✓</span>Everything in Starter</li>
+                  <li><span class="ck">✓</span>Priority support</li>
+                  <li><span class="ck">✓</span>Activity log &amp; audit export</li>
+                  <li><span class="ck">✓</span>Invoice billing, net 30</li>
+                  <li><span class="ck">✓</span>Security packet on demand</li>
+                </ul>
+              </div>
+              <div class="plan" onclick="pick(this,'Growth','Custom','Custom')">
+                <h3>Growth</h3><div class="who">Scaling past 50 seats</div>
+                <div class="price">Custom</div><div class="terms">Talk to us</div>
+                <ul>
+                  <li><span class="ck">✓</span>Everything in Team</li>
+                  <li><span class="ck">✓</span>SSO / SAML &amp; provisioning</li>
+                  <li><span class="ck">✓</span>Custom roles &amp; EU residency</li>
+                  <li><span class="ck">✓</span>Agents &amp; agent builder</li>
+                  <li><span class="ck">✓</span>Veeva / Medidata connectors</li>
+                </ul>
+              </div>
+            </div>
+            <div class="note"><b>Not sure yet?</b> Every plan starts with a 14-day trial. You will not be charged until your team is set up and your security review is complete.</div>
+            <div class="actions" style="margin-top:14px">
+              <button class="btn btn-dark" onclick="jgo(2)">Continue with <span id="planName">Team</span></button>
+              <span class="skip" onclick="show(0)">I would rather talk to someone</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 2 — details -->
+        <div class="jstep" id="j2">
+          <div class="narrow">
+            <div class="eyebrow">Step 2 of 4</div>
+            <h2 class="step">Your details</h2>
+            <p class="lede">We use your work email domain to create your company workspace. Your IT admin completes setup next.</p>
+            <div class="card">
+              <div class="row2">
+                <label class="fld"><span>Full name</span><input type="text" value="Dr. Elena Vargas"></label>
+                <label class="fld"><span>Title</span><input type="text" value="Chief Regulatory Officer"></label>
+              </div>
+              <label class="fld"><span>Work email</span><input type="email" value="elena.vargas@meridianbio.com"><div class="hint">Your workspace will be created for <b>meridianbio.com</b>.</div></label>
+              <div class="row2">
+                <label class="fld"><span>Company</span><input type="text" value="Meridian Bio"></label>
+                <label class="fld"><span>Company size</span><select><option>1,000–2,500 employees</option><option>250–1,000 employees</option><option>2,500–10,000 employees</option><option>Under 250 employees</option></select></label>
+              </div>
+              <label class="fld"><span>Who will administer the workspace?</span>
+                <select id="adminChoice"><option>Someone on our IT team</option><option>Me</option></select>
+                <div class="hint">We will send them an invitation to complete setup — connectors, retention policy, and team invites.</div>
+              </label>
+              <label class="fld"><span>IT administrator email</span><input type="email" value="maria.chen@meridianbio.com"></label>
+            </div>
+            <div class="actions">
+              <button class="btn btn-dark" onclick="jgo(3)">Continue</button>
+              <span class="skip" onclick="jgo(1)">Back</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 3 — review & security -->
+        <div class="jstep" id="j3">
+          <div class="narrow">
+            <div class="eyebrow">Step 3 of 4</div>
+            <h2 class="step">Review and security</h2>
+            <p class="lede">Everything your security reviewer will ask for, available now — not after a procurement cycle.</p>
+
+            <div class="summary">
+              <div class="srow"><span>Plan</span><b id="sumPlan">Team · 25 seats</b></div>
+              <div class="srow"><span>Billing</span><b>Annual, invoiced · net 30</b></div>
+              <div class="srow"><span>Trial</span><b>14 days, no charge</b></div>
+              <div class="srow total"><span>Total after trial</span><b id="sumTotal">$2,500 / month</b></div>
+            </div>
+
+            <div class="card">
+              <h3>How we handle your data</h3>
+              <div class="sub">Standing guarantees on every plan.</div>
+              <div class="promise"><span class="ck">✓</span><span><b>Never used for training.</b> Your documents do not train any model — ours or our providers'.</span></div>
+              <div class="promise"><span class="ck">✓</span><span><b>Encrypted and isolated.</b> Your workspace index is never blended with another customer's.</span></div>
+              <div class="promise"><span class="ck">✓</span><span><b>Delete means delete.</b> Removing a document purges the file, its index, and derived artifacts.</span></div>
+              <div class="doclinks">
+                <button class="doclink">SOC 2 Type II ↓</button><button class="doclink">DPA (pre-signed) ↓</button>
+                <button class="doclink">CAIQ ↓</button><button class="doclink">Subprocessors ↓</button>
+              </div>
+              <div class="note">Valkai is a research and drafting assistant. Outputs are reviewed by your team before entering any regulated process; we do not claim 21 CFR Part 11 validation.</div>
+            </div>
+
+            <div class="card">
+              <h3>How would you like to proceed?</h3>
+              <div class="sub">Standard terms, or send them to your counsel first.</div>
+              <label class="radio"><input type="radio" name="terms" checked><span><b>Accept standard terms</b> — click-through MSA and pre-signed DPA, no redlines</span></label>
+              <label class="radio"><input type="radio" name="terms"><span><b>Send to our legal team first</b> — we will email the packet and hold your workspace</span></label>
+              <label class="radio"><input type="radio" name="terms"><span><b>Book a 30-minute security call</b> — for questions the packet does not answer</span></label>
+            </div>
+
+            <div class="actions">
+              <button class="btn btn-dark" onclick="jgo(4)">Start trial</button>
+              <span class="skip" onclick="jgo(2)">Back</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 4 — confirm -->
+        <div class="jstep" id="j4">
+          <div class="narrow">
+            <div class="done-hero">
+              <div class="tick">✓</div>
+              <h2 class="step">Meridian Bio is ready to set up</h2>
+              <p class="lede">Your workspace exists. Nothing was scheduled, quoted, or negotiated to get here.</p>
+            </div>
+            <div class="summary">
+              <div class="srow"><span>Workspace</span><b>meridianbio.com</b></div>
+              <div class="srow"><span>Plan</span><b id="sumPlan2">Team · 25 seats</b></div>
+              <div class="srow"><span>Trial ends</span><b>Aug 13, 2026</b></div>
+              <div class="srow"><span>Administrator invited</span><b>maria.chen@meridianbio.com</b></div>
+            </div>
+            <div class="nextcards">
+              <div class="nc">
+                <div class="k">Next · IT administrator</div>
+                <h4>Set up the workspace</h4>
+                <p>Maria verifies the domain, connects a source, sets the retention policy, and invites the team.</p>
+                <a class="btn btn-dark btn-sm" href="onboarding.html">Open setup walkthrough →</a>
+              </div>
+              <div class="nc">
+                <div class="k">Then · ongoing</div>
+                <h4>Administer at admin.valkai.com</h4>
+                <p>Members and seats, connectors, data controls, plan entitlements, and the activity log.</p>
+                <a class="btn btn-ghost btn-sm" href="admin-console.html">Open admin console →</a>
+              </div>
+            </div>
+            <div class="note"><b>What just happened:</b> qualification, pricing, security review, and contracting — the first four stages of a six-to-twelve month enterprise cycle — completed self-serve in a few minutes, with a human available at every step for anyone who wants one.</div>
+            <div class="actions" style="margin-top:12px">
+              <span class="skip" onclick="jgo(1);show(1)">Restart the journey</span>
+              <div class="spacer"></div>
+              <span class="skip" onclick="show(0)">Back to valkai.com</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </div>
+
+  <div class="footnote">
+    Prototype 1 of 3 · Valkai purchase journey · <a href="index.html">All prototypes</a> · <a href="onboarding.html">Admin setup</a> · <a href="admin-console.html">Admin console</a>
+  </div>
+</div>
+
+<script>
+  function show(i) {
+    document.querySelectorAll('.screen').forEach(function (s, n) { s.classList.toggle('on', n === i); });
+    document.getElementById('url').innerHTML = i === 0 ? '<b>valkai.com</b>' : '<b>valkai.com</b>/start';
+    window.scrollTo(0, 0);
+  }
+  function jgo(n) {
+    document.querySelectorAll('.jstep').forEach(function (s, i) { s.classList.toggle('on', i === n - 1); });
+    document.querySelectorAll('#prog .p').forEach(function (p) {
+      var s = +p.dataset.s;
+      p.classList.toggle('on', s === n);
+      p.classList.toggle('done', s < n);
+      p.querySelector('.n').textContent = s < n ? '✓' : s;
+    });
+    window.scrollTo(0, 0);
+  }
+  var plan = { name: 'Team', seats: '25 seats', price: '$2,500' };
+  function pick(el, name, seats, price) {
+    document.querySelectorAll('.plan').forEach(function (p) { p.classList.remove('sel'); });
+    el.classList.add('sel');
+    plan = { name: name, seats: seats, price: price };
+    document.getElementById('planName').textContent = name;
+    var label = name + ' · ' + seats;
+    document.getElementById('sumPlan').textContent = label;
+    document.getElementById('sumPlan2').textContent = label;
+    document.getElementById('sumTotal').textContent = price === 'Custom' ? 'Custom quote' : price + ' / month';
+  }
+  document.querySelectorAll('#prog .p').forEach(function (p) {
+    p.addEventListener('click', function () { jgo(+p.dataset.s); });
+  });
+</script>
+</body>
+</html>
